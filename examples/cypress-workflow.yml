@@ -1,0 +1,69 @@
+# Example for a Node.js Cypress project using @shelex/cypress-allure-plugin
+# (or allure-mocha for Mocha/WebdriverIO). Copy to
+# .github/workflows/allure-dashboard.yml in your test repo.
+name: Allure Dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      # cypress-allure-plugin writes to allure-results by default, per
+      # https://github.com/Shelex/cypress-allure-plugin
+      - name: Run tests
+        run: npx cypress run
+        continue-on-error: true # still publish a dashboard on red builds
+
+      - name: Restore dashboard history
+        uses: actions/cache@v4
+        with:
+          path: dashboard-history
+          key: allure-dashboard-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-dashboard-history-${{ github.ref_name }}-
+
+      - name: Generate Allure dashboard
+        id: dashboard
+        uses: pranesh517/allure_dashboards@v1
+        with:
+          allure-results-path: allure-results
+          history-path: dashboard-history
+          dashboard-title: My Cypress Suite
+
+      - name: Save dashboard history
+        run: |
+          rm -rf dashboard-history
+          cp -r allure-dashboard/data dashboard-history
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-dashboard
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

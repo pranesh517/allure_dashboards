@@ -31,10 +31,18 @@ searchable, filterable test explorer — light and dark mode included.
 ```
 
 That's the minimum. For trend charts and flaky-test detection across builds (the
-interesting part), you need to persist the `data/` directory between runs — see
-[examples/pytest-workflow.yml](examples/pytest-workflow.yml) or
-[examples/basic-workflow.yml](examples/basic-workflow.yml) for a complete workflow
-using `actions/cache`, including a minimum-pass-rate gate.
+interesting part), you need to persist the `data/` directory between runs — see a
+complete workflow using `actions/cache` for your stack:
+
+- [examples/pytest-workflow.yml](examples/pytest-workflow.yml) — Python / pytest / allure-pytest
+- [examples/testng-workflow.yml](examples/testng-workflow.yml) — Java / TestNG / Maven / allure-testng
+- [examples/cypress-workflow.yml](examples/cypress-workflow.yml) — Node.js / Cypress / cypress-allure-plugin
+- [examples/basic-workflow.yml](examples/basic-workflow.yml) — generic template + minimum-pass-rate gate
+
+The action itself doesn't care which of these produced `allure-results/` — Allure's
+raw-results JSON is one language-agnostic format shared by every official adapter
+(`allure-java`, `allure-js`, `allure-python`, `allure-dotnet`, `allure-ruby`), so
+anything that writes that format works, not just what's listed above.
 
 Full permissions your job needs for the Pages deploy:
 

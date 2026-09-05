@@ -1,0 +1,67 @@
+# Example for a Java/TestNG project using the allure-testng adapter (Maven).
+# Copy to .github/workflows/allure-dashboard.yml in your test repo.
+name: Allure Dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # allure-testng writes to target/allure-results by default when
+      # configured per https://allurereport.org/docs/testng/
+      - name: Run tests
+        run: mvn -B test
+        continue-on-error: true # still publish a dashboard on red builds
+
+      - name: Restore dashboard history
+        uses: actions/cache@v4
+        with:
+          path: dashboard-history
+          key: allure-dashboard-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-dashboard-history-${{ github.ref_name }}-
+
+      - name: Generate Allure dashboard
+        id: dashboard
+        uses: pranesh517/allure_dashboards@v1
+        with:
+          allure-results-path: target/allure-results
+          history-path: dashboard-history
+          dashboard-title: My Java Test Suite
+
+      - name: Save dashboard history
+        run: |
+          rm -rf dashboard-history
+          cp -r allure-dashboard/data dashboard-history
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-dashboard
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
