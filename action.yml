@@ -1,6 +1,6 @@
 name: 'Allure Dashboard'
 description: 'Turn Allure raw results into a creative, trend-aware static dashboard, ready to publish on GitHub Pages.'
-author: 'qaarchitect'
+author: 'pranesh517'
 branding:
   icon: 'bar-chart-2'
   color: 'purple'

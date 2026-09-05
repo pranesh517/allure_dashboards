@@ -49,7 +49,7 @@ jobs:
 
       - name: Generate Allure dashboard
         id: dashboard
-        uses: qaarchitect/allure-dashboard-action@v1
+        uses: pranesh517/allure_dashboards@v1
         with:
           allure-results-path: allure-results
           history-path: dashboard-history

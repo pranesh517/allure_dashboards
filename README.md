@@ -19,7 +19,7 @@ searchable, filterable test explorer — light and dark mode included.
   run: pytest --alluredir=allure-results
 
 - name: Generate Allure dashboard
-  uses: qaarchitect/allure-dashboard-action@v1
+  uses: pranesh517/allure_dashboards@v1
   with:
     allure-results-path: allure-results
 
