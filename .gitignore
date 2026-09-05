@@ -1,0 +1,4 @@
+node_modules/
+allure-dashboard/
+*.log
+.DS_Store

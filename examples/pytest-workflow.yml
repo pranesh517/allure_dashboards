@@ -1,0 +1,75 @@
+# Example for a pytest + allure-pytest project (e.g. Playwright/Selenium UI tests).
+# Copy to .github/workflows/allure-dashboard.yml in your test repo.
+name: Allure Dashboard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt  # must include allure-pytest
+
+      # --clean-alluredir avoids stale result files from a previous local/CI
+      # run being picked up as duplicate test executions.
+      - name: Run tests
+        run: pytest --alluredir=allure-results --clean-alluredir
+        continue-on-error: true # still publish a dashboard on red builds
+
+      - name: Restore dashboard history
+        uses: actions/cache@v4
+        with:
+          path: dashboard-history
+          key: allure-dashboard-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-dashboard-history-${{ github.ref_name }}-
+
+      - name: Generate Allure dashboard
+        id: dashboard
+        uses: qaarchitect/allure-dashboard-action@v1
+        with:
+          allure-results-path: allure-results
+          history-path: dashboard-history
+          dashboard-title: HRM UI Tests
+
+      - name: Save dashboard history
+        run: |
+          rm -rf dashboard-history
+          cp -r allure-dashboard/data dashboard-history
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-dashboard
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Summary
+        run: |
+          echo "### Allure results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Pass rate: ${{ steps.dashboard.outputs.pass-rate }}%" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Total: ${{ steps.dashboard.outputs.total }} · Failed: ${{ steps.dashboard.outputs.failed }} · Flaky: ${{ steps.dashboard.outputs.flaky-count }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Dashboard: ${{ steps.deployment.outputs.page_url }}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,25 @@
+{
+  "uuid": "1589bd44-054d-4555-b529-2b1cddddfff2",
+  "historyId": "44a6b626811ecbaed0702ab7b1634467",
+  "fullName": "Checkout Tests > should apply discount code",
+  "name": "should apply discount code",
+  "status": "passed",
+  "stage": "finished",
+  "start": 1757000001300,
+  "stop": 1757000001720,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "severity",
+      "value": "normal"
+    }
+  ],
+  "parameters": []
+}

@@ -1,0 +1,29 @@
+{
+  "uuid": "fc13005e-73fc-4708-851a-9043c328f7f6",
+  "historyId": "44a6b626811ecbaed0702ab7b1634467",
+  "fullName": "Checkout Tests > should apply discount code",
+  "name": "should apply discount code",
+  "status": "failed",
+  "stage": "finished",
+  "start": 1757003601300,
+  "stop": 1757003601720,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "severity",
+      "value": "normal"
+    }
+  ],
+  "statusDetails": {
+    "message": "Expected discount 10% but got 0%",
+    "trace": "AssertionError: expected 0.9 to equal 1.0\n  at DiscountSpec.js:44"
+  },
+  "parameters": []
+}

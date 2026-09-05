@@ -1,0 +1,25 @@
+{
+  "uuid": "c3903922-a2aa-42b2-9118-30a81106cd67",
+  "historyId": "afde1adad7dbbcc086b027947fc1a36e",
+  "fullName": "Auth Tests > should reset password via email",
+  "name": "should reset password via email",
+  "status": "passed",
+  "stage": "finished",
+  "start": 1757000004900,
+  "stop": 1757000010100,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "severity",
+      "value": "normal"
+    }
+  ],
+  "parameters": []
+}

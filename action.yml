@@ -1,0 +1,83 @@
+name: 'Allure Dashboard'
+description: 'Turn Allure raw results into a creative, trend-aware static dashboard, ready to publish on GitHub Pages.'
+author: 'qaarchitect'
+branding:
+  icon: 'bar-chart-2'
+  color: 'purple'
+
+inputs:
+  allure-results-path:
+    description: 'Path to the allure-results directory produced by your test run (the raw *-result.json files, before `allure generate`).'
+    required: true
+  output-path:
+    description: 'Directory to write the generated dashboard site into.'
+    required: false
+    default: 'allure-dashboard'
+  history-path:
+    description: 'Path to a previous data/ directory to merge trend history from (e.g. restored via actions/cache). Leave empty to start fresh history.'
+    required: false
+    default: ''
+  run-id:
+    description: 'Unique id for this run, used as the history key.'
+    required: false
+    default: ${{ github.run_id }}
+  run-label:
+    description: 'Human label for this run shown on the dashboard.'
+    required: false
+    default: ${{ github.run_number }}
+  max-history:
+    description: 'Maximum number of runs kept in the trend history.'
+    required: false
+    default: '100'
+  dashboard-title:
+    description: 'Title shown on the generated dashboard.'
+    required: false
+    default: 'Allure Dashboard'
+
+outputs:
+  total:
+    description: 'Total tests in this run'
+    value: ${{ steps.process.outputs.total }}
+  passed:
+    description: 'Passed tests in this run'
+    value: ${{ steps.process.outputs.passed }}
+  failed:
+    description: 'Failed tests in this run'
+    value: ${{ steps.process.outputs.failed }}
+  broken:
+    description: 'Broken tests in this run'
+    value: ${{ steps.process.outputs.broken }}
+  skipped:
+    description: 'Skipped tests in this run'
+    value: ${{ steps.process.outputs.skipped }}
+  pass-rate:
+    description: 'Pass rate percentage (0-100) for this run'
+    value: ${{ steps.process.outputs.pass-rate }}
+  flaky-count:
+    description: 'Number of tests flagged flaky in this run'
+    value: ${{ steps.process.outputs.flaky-count }}
+  site-path:
+    description: 'Path to the generated static dashboard (upload this with actions/upload-pages-artifact)'
+    value: ${{ steps.process.outputs.site-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Generate Allure dashboard
+      id: process
+      shell: bash
+      run: |
+        node "${{ github.action_path }}/src/process.mjs" \
+          --results "${{ inputs.allure-results-path }}" \
+          --output "${{ inputs.output-path }}" \
+          --history "${{ inputs.history-path }}" \
+          --run-id "${{ inputs.run-id }}" \
+          --run-label "${{ inputs.run-label }}" \
+          --max-history "${{ inputs.max-history }}" \
+          --title "${{ inputs.dashboard-title }}" \
+          --site-template "${{ github.action_path }}/site-template"

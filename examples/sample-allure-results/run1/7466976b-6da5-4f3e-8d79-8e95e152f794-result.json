@@ -1,0 +1,29 @@
+{
+  "uuid": "7466976b-6da5-4f3e-8d79-8e95e152f794",
+  "historyId": "21cd407b5fb60138589096453108d256",
+  "fullName": "Auth Tests > should lock account after 5 failed attempts",
+  "name": "should lock account after 5 failed attempts",
+  "status": "broken",
+  "stage": "finished",
+  "start": 1757000002900,
+  "stop": 1757000004800,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "severity",
+      "value": "critical"
+    }
+  ],
+  "statusDetails": {
+    "message": "Connection timeout while locking account",
+    "trace": "TimeoutError: Connection timeout while locking account\n  at AuthClient.lock (auth.js:88)"
+  },
+  "parameters": []
+}

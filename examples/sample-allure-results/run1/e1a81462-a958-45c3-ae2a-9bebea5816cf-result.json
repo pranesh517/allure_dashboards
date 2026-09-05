@@ -1,0 +1,25 @@
+{
+  "uuid": "e1a81462-a958-45c3-ae2a-9bebea5816cf",
+  "historyId": "9d450248686d04ed1d6606c5bfd2befb",
+  "fullName": "Auth Tests > should login with valid credentials",
+  "name": "should login with valid credentials",
+  "status": "passed",
+  "stage": "finished",
+  "start": 1757000002200,
+  "stop": 1757000002810,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "severity",
+      "value": "blocker"
+    }
+  ],
+  "parameters": []
+}

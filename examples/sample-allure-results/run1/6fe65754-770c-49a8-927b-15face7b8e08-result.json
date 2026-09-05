@@ -1,0 +1,25 @@
+{
+  "uuid": "6fe65754-770c-49a8-927b-15face7b8e08",
+  "historyId": "11d11a732add4e53c13eb4c9a4033a22",
+  "fullName": "Checkout Tests > should complete purchase with valid card",
+  "name": "should complete purchase with valid card",
+  "status": "passed",
+  "stage": "finished",
+  "start": 1757000000000,
+  "stop": 1757000000812,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "severity",
+      "value": "critical"
+    }
+  ],
+  "parameters": []
+}

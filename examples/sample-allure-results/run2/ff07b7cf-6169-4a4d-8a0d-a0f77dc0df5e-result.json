@@ -1,0 +1,25 @@
+{
+  "uuid": "ff07b7cf-6169-4a4d-8a0d-a0f77dc0df5e",
+  "historyId": "21cd407b5fb60138589096453108d256",
+  "fullName": "Auth Tests > should lock account after 5 failed attempts",
+  "name": "should lock account after 5 failed attempts",
+  "status": "passed",
+  "stage": "finished",
+  "start": 1757003602900,
+  "stop": 1757003604800,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Auth Tests"
+    },
+    {
+      "name": "severity",
+      "value": "critical"
+    }
+  ],
+  "parameters": []
+}

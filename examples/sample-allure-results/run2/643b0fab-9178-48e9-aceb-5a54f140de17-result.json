@@ -1,0 +1,25 @@
+{
+  "uuid": "643b0fab-9178-48e9-aceb-5a54f140de17",
+  "historyId": "f8434f1a20a42a04c5f4a885c711cd28",
+  "fullName": "Checkout Tests > should reject expired card",
+  "name": "should reject expired card",
+  "status": "passed",
+  "stage": "finished",
+  "start": 1757003600900,
+  "stop": 1757003601240,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "severity",
+      "value": "normal"
+    }
+  ],
+  "parameters": []
+}

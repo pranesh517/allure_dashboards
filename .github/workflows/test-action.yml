@@ -1,0 +1,78 @@
+# Self-test: proves the action works end-to-end for anyone who checks it out,
+# by running it against the bundled two-run fixture and asserting the output.
+# On pushes to main it also republishes the result as a live demo on this
+# repo's own GitHub Pages.
+name: Self-test & demo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run action against fixture run #1
+        id: run1
+        uses: ./
+        with:
+          allure-results-path: examples/sample-allure-results/run1
+          output-path: allure-dashboard
+          run-id: demo-run-1
+          run-label: 'Demo Build #1'
+          dashboard-title: 'Allure Dashboard — Live Demo'
+
+      - name: Carry history forward
+        run: |
+          rm -rf demo-history
+          cp -r allure-dashboard/data demo-history
+
+      - name: Run action against fixture run #2 (merges history)
+        id: run2
+        uses: ./
+        with:
+          allure-results-path: examples/sample-allure-results/run2
+          output-path: allure-dashboard
+          history-path: demo-history
+          run-id: demo-run-2
+          run-label: 'Demo Build #2'
+          dashboard-title: 'Allure Dashboard — Live Demo'
+
+      - name: Assert outputs are correct
+        run: |
+          set -e
+          test "${{ steps.run2.outputs.total }}" = "8"
+          test "${{ steps.run2.outputs.passed }}" = "5"
+          test "${{ steps.run2.outputs.failed }}" = "2"
+          test "${{ steps.run2.outputs.flaky-count }}" = "2"
+          test -f allure-dashboard/index.html
+          test -f allure-dashboard/data/history.json
+          test -f allure-dashboard/data/runs/demo-run-1.json
+          test -f allure-dashboard/data/runs/demo-run-2.json
+          node -e "const h=require('./allure-dashboard/data/history.json'); if (h.length !== 2) throw new Error('expected 2 history entries, got ' + h.length)"
+          echo "Self-test passed."
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          path: allure-dashboard
+
+      - id: deployment
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/deploy-pages@v4

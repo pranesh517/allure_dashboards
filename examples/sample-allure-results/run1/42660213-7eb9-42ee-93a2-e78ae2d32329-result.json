@@ -1,0 +1,29 @@
+{
+  "uuid": "42660213-7eb9-42ee-93a2-e78ae2d32329",
+  "historyId": "7919dd538a4f9278526716a8ea56178b",
+  "fullName": "Checkout Tests > should calculate tax correctly",
+  "name": "should calculate tax correctly",
+  "status": "failed",
+  "stage": "finished",
+  "start": 1757000001800,
+  "stop": 1757000002060,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "severity",
+      "value": "critical"
+    }
+  ],
+  "statusDetails": {
+    "message": "Expected tax 8.25 but got 7.00",
+    "trace": "AssertionError: expected 7.00 to equal 8.25\n  at TaxSpec.js:21"
+  },
+  "parameters": []
+}

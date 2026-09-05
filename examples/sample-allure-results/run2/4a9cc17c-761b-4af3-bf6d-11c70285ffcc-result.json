@@ -1,0 +1,25 @@
+{
+  "uuid": "4a9cc17c-761b-4af3-bf6d-11c70285ffcc",
+  "historyId": "68fdd5cf6c59c2ebcab0b44d1a3b7b71",
+  "fullName": "Checkout Tests > should handle out of stock item",
+  "name": "should handle out of stock item",
+  "status": "skipped",
+  "stage": "finished",
+  "start": 1757003602100,
+  "stop": 1757003602100,
+  "labels": [
+    {
+      "name": "suite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "parentSuite",
+      "value": "Checkout Tests"
+    },
+    {
+      "name": "severity",
+      "value": "minor"
+    }
+  ],
+  "parameters": []
+}

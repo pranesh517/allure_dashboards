@@ -1,0 +1,81 @@
+# Generic example: run your tests, generate the dashboard, publish to GitHub Pages.
+# Copy this to .github/workflows/allure-dashboard.yml in YOUR test repo and
+# replace the "Run tests" step with your actual test command.
+name: Allure Dashboard
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- 1. Run your tests here — must produce an allure-results/ dir ----
+      # Examples:
+      #   pytest --alluredir=allure-results
+      #   mvn test  (with the allure-maven / allure-junit adapter configured)
+      #   npx cypress run  (with @shelex/cypress-allure-plugin)
+      - name: Run tests
+        run: echo "replace this step with your real test command"
+        # run: pytest --alluredir=allure-results
+
+      # ---- 2. Restore trend history from the previous run ----
+      # A unique key per run (with the ref as a restore-keys prefix) means
+      # actions/cache always saves the updated history at the end of the job -
+      # that's what makes trend charts and flaky detection accumulate over time.
+      - name: Restore dashboard history
+        uses: actions/cache@v4
+        with:
+          path: dashboard-history
+          key: allure-dashboard-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-dashboard-history-${{ github.ref_name }}-
+
+      # ---- 3. Build the dashboard ----
+      - name: Generate Allure dashboard
+        id: dashboard
+        uses: qaarchitect/allure-dashboard-action@v1
+        with:
+          allure-results-path: allure-results
+          output-path: allure-dashboard
+          history-path: dashboard-history
+          dashboard-title: My Project — Test Dashboard
+
+      # ---- 4. Save history for next run ----
+      - name: Save dashboard history
+        run: |
+          rm -rf dashboard-history
+          cp -r allure-dashboard/data dashboard-history
+
+      # ---- 5. Publish to GitHub Pages ----
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-dashboard
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      # ---- optional: fail the build on a bad pass rate ----
+      - name: Enforce minimum pass rate
+        if: steps.dashboard.outputs.pass-rate < 80
+        run: |
+          echo "Pass rate ${{ steps.dashboard.outputs.pass-rate }}% is below the 80% threshold"
+          exit 1
