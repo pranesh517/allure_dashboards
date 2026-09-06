@@ -1,0 +1,34 @@
+{
+  "uuid": "9b1f1e2a-3c4d-5e6f-7a8b-9c0d1e2f3a4b",
+  "children": [
+    "fc13005e-73fc-4708-851a-9043c328f7f6"
+  ],
+  "befores": [
+    {
+      "name": "open checkout page",
+      "status": "passed",
+      "stage": "finished",
+      "start": 1757003601280,
+      "stop": 1757003601300,
+      "steps": [],
+      "attachments": []
+    }
+  ],
+  "afters": [
+    {
+      "name": "afterEach teardown",
+      "status": "failed",
+      "stage": "finished",
+      "start": 1757003601720,
+      "stop": 1757003601760,
+      "steps": [],
+      "attachments": [
+        {
+          "name": "failure-screenshot.png",
+          "source": "fc13005e-teardown-screenshot-attachment.png",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

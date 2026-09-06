@@ -67,11 +67,16 @@ jobs:
           test -f allure-dashboard/data/runs/demo-run-2.json
           node -e "const h=require('./allure-dashboard/data/history.json'); if (h.length !== 2) throw new Error('expected 2 history entries, got ' + h.length)"
           test -f allure-dashboard/data/attachments/demo-run-2/d452a8df-checkout-page-attachment.png
+          test -f allure-dashboard/data/attachments/demo-run-2/fc13005e-teardown-screenshot-attachment.png
           node -e "
-            const t = require('./allure-dashboard/data/latest.json').tests.find((t) => t.name === 'should calculate tax correctly');
+            const tests = require('./allure-dashboard/data/latest.json').tests;
+            const t = tests.find((t) => t.name === 'should calculate tax correctly');
             if (!t || !t.steps || !t.steps.length) throw new Error('expected steps on should calculate tax correctly');
             if (!t.attachments || !t.attachments[0].path) throw new Error('expected a resolved attachment path');
             if (!t.steps.some((s) => s.attachments && s.attachments[0] && s.attachments[0].path)) throw new Error('expected a resolved step attachment path');
+            const teardown = tests.find((t) => t.name === 'should apply discount code');
+            const after = teardown && teardown.fixtures && teardown.fixtures.find((f) => f.phase === 'after');
+            if (!after || !after.attachments[0] || !after.attachments[0].path) throw new Error('expected a resolved teardown-fixture attachment path');
           "
           echo "Self-test passed."
 
