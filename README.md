@@ -105,6 +105,15 @@ finds into `data/attachments/<run-id>/` so the dashboard can serve it; nothing
 shows up here if `allure-results-path` only contains the result JSON without
 those attachment files alongside it.
 
+A screenshot taken on failure is often captured in a teardown hook, not the
+test body itself — `@AfterMethod` (TestNG), `afterEach` (Cypress,
+Playwright), RSpec's `after`, and so on. Allure records those separately from
+the test's own `*-result.json`, as `befores`/`afters` on a `*-container.json`
+that links back to the test by uuid — this action reads those too and shows
+them in a "Setup & teardown" section on the expanded row, tagged Before/After,
+so a hook-captured screenshot is visible regardless of which framework's
+adapter wrote it.
+
 ### Browsing previous runs
 
 The dashboard isn't just "latest run + trend lines" — every run's full detail

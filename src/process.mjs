@@ -81,6 +81,24 @@ async function loadRawResults(resultsDir) {
   return results;
 }
 
+// Fixtures (@Before/@After, beforeEach/afterEach, setup/teardown, ...) are
+// never part of a test's own `-result.json` — Allure records them separately
+// in `-container.json` files as `befores`/`afters`, linked to the tests they
+// wrap via `children` (a list of test uuids). This is where a screenshot
+// taken in a teardown hook on failure (a very common pattern — TestNG
+// `@AfterMethod`, Playwright/Cypress `afterEach`, RSpec `after`, ...) ends up,
+// so without reading containers that screenshot is invisible no matter what
+// the test's own result says.
+async function loadContainers(resultsDir) {
+  const files = (await fs.readdir(resultsDir)).filter((f) => f.endsWith('-container.json'));
+  const containers = [];
+  for (const f of files) {
+    const data = await readJsonSafe(path.join(resultsDir, f), null);
+    if (data) containers.push(data);
+  }
+  return containers;
+}
+
 function normalizeAttachment(raw) {
   return {
     name: raw.name || 'attachment',
@@ -99,6 +117,30 @@ function normalizeStep(raw) {
     attachments: (raw.attachments || []).map(normalizeAttachment),
     steps: (raw.steps || []).map(normalizeStep),
   };
+}
+
+function normalizeFixture(raw, phase) {
+  return { phase, ...normalizeStep(raw) };
+}
+
+// Maps a test's uuid to the before/after fixtures that wrapped it, across
+// every container in the run (one container can wrap many tests, e.g. a
+// shared `describe` block's hooks; a test's teardown can also be split
+// across more than one container).
+function buildFixtureMap(containers) {
+  const map = new Map();
+  for (const c of containers) {
+    const fixtures = [
+      ...(c.befores || []).map((f) => normalizeFixture(f, 'before')),
+      ...(c.afters || []).map((f) => normalizeFixture(f, 'after')),
+    ];
+    if (!fixtures.length) continue;
+    for (const childUuid of c.children || []) {
+      if (!map.has(childUuid)) map.set(childUuid, []);
+      map.get(childUuid).push(...fixtures);
+    }
+  }
+  return map;
 }
 
 function normalizeTest(raw) {
@@ -165,6 +207,7 @@ async function resolveAttachments(tests, resultsDir, outputDir, runId) {
   async function walk(node) {
     for (const att of node.attachments || []) await copyOne(att);
     for (const step of node.steps || []) await walk(step);
+    for (const fixture of node.fixtures || []) await walk(fixture);
   }
 
   for (const t of tests) await walk(t);
@@ -217,8 +260,12 @@ async function main() {
   }
 
   const rawResults = await loadRawResults(resultsDir);
+  const containers = await loadContainers(resultsDir);
   const categories = await readJsonSafe(path.join(resultsDir, 'categories.json'), []);
   const tests = rawResults.map(normalizeTest);
+
+  const fixtureMap = buildFixtureMap(containers);
+  for (const t of tests) t.fixtures = fixtureMap.get(t.uuid) || [];
 
   // ---- prior history / flaky tracking -----------------------------------
   const priorHistory = historyDir
@@ -343,6 +390,7 @@ async function main() {
       trace: t.trace,
       steps: t.steps,
       attachments: t.attachments,
+      fixtures: t.fixtures,
     })),
   };
 

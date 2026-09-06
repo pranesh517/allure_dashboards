@@ -276,6 +276,20 @@ function renderSteps(steps) {
     </li>`).join('')}</ul>`;
 }
 
+// Fixtures (@Before/@After, beforeEach/afterEach, ...) aren't part of the
+// test's own step tree — they wrap it — so they get their own section
+// rather than being folded into "Steps". This is where a screenshot taken
+// in a teardown hook on failure shows up.
+function renderFixtures(fixtures) {
+  if (!fixtures || !fixtures.length) return '';
+  return `<ul class="steps-list">${fixtures.map((f) => `
+    <li class="step-item">
+      <div class="step-row">${chip(f.status)}<span class="fixture-phase">${f.phase === 'before' ? 'Before' : 'After'}</span><span class="step-name">${escapeHtml(f.name)}</span><span class="step-duration">${formatDuration(f.durationMs)}</span></div>
+      ${renderAttachments(f.attachments)}
+      ${renderSteps(f.steps)}
+    </li>`).join('')}</ul>`;
+}
+
 function renderTestDetail(t) {
   const sections = [];
   if (t.attachments && t.attachments.length) {
@@ -283,6 +297,9 @@ function renderTestDetail(t) {
   }
   if (t.steps && t.steps.length) {
     sections.push(`<div class="detail-section"><h4>Steps</h4>${renderSteps(t.steps)}</div>`);
+  }
+  if (t.fixtures && t.fixtures.length) {
+    sections.push(`<div class="detail-section"><h4>Setup &amp; teardown</h4>${renderFixtures(t.fixtures)}</div>`);
   }
   if (t.message || t.trace) {
     sections.push(`<div class="detail-section"><h4>Error</h4><pre>${escapeHtml(t.message || '')}${t.trace ? '\n\n' + escapeHtml(t.trace) : ''}</pre></div>`);
@@ -315,7 +332,7 @@ function renderTestTable(tests) {
       return;
     }
     for (const t of filtered.slice(0, 300)) {
-      const hasDetail = !!(t.message || t.trace || (t.steps && t.steps.length) || (t.attachments && t.attachments.length));
+      const hasDetail = !!(t.message || t.trace || (t.steps && t.steps.length) || (t.attachments && t.attachments.length) || (t.fixtures && t.fixtures.length));
       const row = el(`
         <tr class="test-row">
           <td><strong>${escapeHtml(t.name)}</strong>${t.flaky ? ' ' + chip('flaky', 'Flaky') : ''}<div style="color:var(--text-muted); font-size:11px;">${escapeHtml(t.suite)}</div></td>
