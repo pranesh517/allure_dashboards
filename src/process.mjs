@@ -81,6 +81,26 @@ async function loadRawResults(resultsDir) {
   return results;
 }
 
+function normalizeAttachment(raw) {
+  return {
+    name: raw.name || 'attachment',
+    type: raw.type || '',
+    source: raw.source || null,
+  };
+}
+
+function normalizeStep(raw) {
+  const start = raw.start || 0;
+  const stop = raw.stop || start;
+  return {
+    name: raw.name || 'step',
+    status: STATUSES.includes(raw.status) ? raw.status : 'unknown',
+    durationMs: Math.max(0, stop - start),
+    attachments: (raw.attachments || []).map(normalizeAttachment),
+    steps: (raw.steps || []).map(normalizeStep),
+  };
+}
+
 function normalizeTest(raw) {
   const labels = raw.labels || [];
   const suite = labelValue(labels, 'suite') || labelValue(labels, 'parentSuite') || 'Uncategorized';
@@ -107,7 +127,47 @@ function normalizeTest(raw) {
     message: raw.statusDetails?.message || null,
     trace: raw.statusDetails?.trace || null,
     flaky: !!raw.flaky,
+    steps: (raw.steps || []).map(normalizeStep),
+    attachments: (raw.attachments || []).map(normalizeAttachment),
   };
+}
+
+// Allure attachments only carry a `source` filename pointing at a sibling
+// file in the raw results dir (e.g. `<uuid>-attachment.png`) — they are never
+// inlined. Walk every test's own attachments plus every nested step's, copy
+// each referenced file into the generated site, and rewrite `source` into a
+// `path` the dashboard can fetch/render (images) or link to (everything
+// else). Missing files (never uploaded, wrong path, etc.) are left with no
+// `path` so the UI can say so instead of rendering a broken link.
+async function resolveAttachments(tests, resultsDir, outputDir, runId) {
+  const relDir = path.posix.join('data', 'attachments', sanitizeId(runId));
+  const destDir = path.join(outputDir, ...relDir.split('/'));
+  let destDirReady = false;
+  const seenNames = new Set();
+
+  async function copyOne(att) {
+    const source = att.source;
+    delete att.source; // internal raw-results filename — never meaningful to the client
+    if (!source) return;
+    const src = path.join(resultsDir, source);
+    if (!(await pathExists(src))) return;
+    if (!destDirReady) {
+      await fs.mkdir(destDir, { recursive: true });
+      destDirReady = true;
+    }
+    let destName = sanitizeId(source);
+    while (seenNames.has(destName)) destName = `${hashOf(destName)}_${destName}`;
+    seenNames.add(destName);
+    await fs.copyFile(src, path.join(destDir, destName));
+    att.path = `./${relDir}/${destName}`;
+  }
+
+  async function walk(node) {
+    for (const att of node.attachments || []) await copyOne(att);
+    for (const step of node.steps || []) await walk(step);
+  }
+
+  for (const t of tests) await walk(t);
 }
 
 function classifyCategory(test, categories) {
@@ -245,6 +305,18 @@ async function main() {
 
   const history = [runSummary, ...priorHistory].slice(0, maxHistory);
 
+  // ---- write site shell (needed before attachments can be copied in) ------
+  if (siteTemplate && (await pathExists(siteTemplate))) {
+    await copyDir(siteTemplate, outputDir);
+  } else {
+    await fs.mkdir(outputDir, { recursive: true });
+  }
+  const dataDir = path.join(outputDir, 'data');
+  const runsDir = path.join(dataDir, 'runs');
+  await fs.mkdir(runsDir, { recursive: true });
+
+  await resolveAttachments(tests, resultsDir, outputDir, runId);
+
   const latest = {
     ...runSummary,
     title,
@@ -269,19 +341,12 @@ async function main() {
       flaky: t.flaky,
       message: t.message,
       trace: t.trace,
+      steps: t.steps,
+      attachments: t.attachments,
     })),
   };
 
   // ---- write site ------------------------------------------------------
-  if (siteTemplate && (await pathExists(siteTemplate))) {
-    await copyDir(siteTemplate, outputDir);
-  } else {
-    await fs.mkdir(outputDir, { recursive: true });
-  }
-  const dataDir = path.join(outputDir, 'data');
-  const runsDir = path.join(dataDir, 'runs');
-  await fs.mkdir(runsDir, { recursive: true });
-
   // Carry forward full per-run snapshots for every run still retained in
   // `history` (after the max-history cap), so the dashboard can browse back
   // to any previous run, not just its rollup numbers. Snapshots live under

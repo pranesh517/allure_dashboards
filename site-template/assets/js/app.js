@@ -232,6 +232,67 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function openLightbox(src, alt) {
+  const box = el(`<div class="lightbox"><img src="${src}" alt="${escapeHtml(alt || '')}"></div>`);
+  box.addEventListener('click', () => box.remove());
+  document.body.appendChild(box);
+}
+
+// Test detail rows (including nested step attachments) are inserted via
+// innerHTML, so listeners can't be attached to individual thumbnails up
+// front — a node's outerHTML string carries no event bindings. Delegate
+// from a single document-level listener instead; it works no matter where
+// or how many times this markup gets re-inserted.
+function setupAttachmentLightbox() {
+  document.addEventListener('click', (ev) => {
+    const link = ev.target.closest('.attachment-thumb');
+    if (!link) return;
+    ev.preventDefault();
+    openLightbox(link.getAttribute('href'), link.title);
+  });
+}
+
+function renderAttachments(attachments) {
+  if (!attachments || !attachments.length) return '';
+  const items = attachments.map((a) => {
+    if (!a.path) {
+      return `<span class="attachment-missing">${escapeHtml(a.name)} (file not found)</span>`;
+    }
+    if ((a.type || '').startsWith('image/')) {
+      return `<a href="${a.path}" class="attachment-thumb" title="${escapeHtml(a.name)}" target="_blank" rel="noopener"><img src="${a.path}" alt="${escapeHtml(a.name)}" loading="lazy"></a>`;
+    }
+    return `<a href="${a.path}" class="attachment-file" target="_blank" rel="noopener">📎 ${escapeHtml(a.name)}</a>`;
+  }).join('');
+  return `<div class="attachments">${items}</div>`;
+}
+
+function renderSteps(steps) {
+  if (!steps || !steps.length) return '';
+  return `<ul class="steps-list">${steps.map((s) => `
+    <li class="step-item">
+      <div class="step-row">${chip(s.status)}<span class="step-name">${escapeHtml(s.name)}</span><span class="step-duration">${formatDuration(s.durationMs)}</span></div>
+      ${renderAttachments(s.attachments)}
+      ${renderSteps(s.steps)}
+    </li>`).join('')}</ul>`;
+}
+
+function renderTestDetail(t) {
+  const sections = [];
+  if (t.attachments && t.attachments.length) {
+    sections.push(`<div class="detail-section"><h4>Screenshots &amp; attachments</h4>${renderAttachments(t.attachments)}</div>`);
+  }
+  if (t.steps && t.steps.length) {
+    sections.push(`<div class="detail-section"><h4>Steps</h4>${renderSteps(t.steps)}</div>`);
+  }
+  if (t.message || t.trace) {
+    sections.push(`<div class="detail-section"><h4>Error</h4><pre>${escapeHtml(t.message || '')}${t.trace ? '\n\n' + escapeHtml(t.trace) : ''}</pre></div>`);
+  }
+  if (!sections.length) {
+    sections.push('<div class="empty-state">No steps, attachments, or error details recorded for this test.</div>');
+  }
+  return `<div class="test-detail-body">${sections.join('')}</div>`;
+}
+
 function renderTestTable(tests) {
   const body = document.getElementById('tests-body');
   const search = document.getElementById('test-search');
@@ -254,22 +315,27 @@ function renderTestTable(tests) {
       return;
     }
     for (const t of filtered.slice(0, 300)) {
+      const hasDetail = !!(t.message || t.trace || (t.steps && t.steps.length) || (t.attachments && t.attachments.length));
       const row = el(`
         <tr class="test-row">
           <td><strong>${escapeHtml(t.name)}</strong>${t.flaky ? ' ' + chip('flaky', 'Flaky') : ''}<div style="color:var(--text-muted); font-size:11px;">${escapeHtml(t.suite)}</div></td>
           <td>${chip(t.status)}</td>
           <td>${t.severity}</td>
           <td class="num">${formatDuration(t.durationMs)}</td>
-          <td class="num">${t.message ? '▸' : ''}</td>
+          <td class="num">${hasDetail ? '▸' : ''}</td>
         </tr>`);
       body.appendChild(row);
-      if (t.message || t.trace) {
+      if (hasDetail) {
         const detail = el(`
           <tr class="test-detail">
-            <td colspan="5"><pre>${escapeHtml(t.message || '')}${t.trace ? '\n\n' + escapeHtml(t.trace) : ''}</pre></td>
+            <td colspan="5"></td>
           </tr>`);
+        detail.querySelector('td').innerHTML = renderTestDetail(t);
         body.appendChild(detail);
-        row.addEventListener('click', () => detail.classList.toggle('open'));
+        row.addEventListener('click', () => {
+          detail.classList.toggle('open');
+          row.classList.toggle('expanded');
+        });
       }
     }
   }
@@ -330,6 +396,7 @@ function setupRunPicker(history, latest) {
 async function main() {
   applyStoredTheme();
   setupThemeToggle();
+  setupAttachmentLightbox();
 
   const [latest, history, meta] = await Promise.all([
     loadJSON('./data/latest.json', null),

@@ -25,5 +25,44 @@
     "message": "Expected tax 8.25 but got 7.00",
     "trace": "AssertionError: expected 7.00 to equal 8.25\n  at TaxSpec.js:21"
   },
-  "parameters": []
+  "parameters": [],
+  "steps": [
+    {
+      "name": "add item to cart",
+      "status": "passed",
+      "start": 1757003601800,
+      "stop": 1757003601880,
+      "steps": [],
+      "attachments": []
+    },
+    {
+      "name": "apply california tax rate",
+      "status": "passed",
+      "start": 1757003601880,
+      "stop": 1757003601950,
+      "steps": [],
+      "attachments": []
+    },
+    {
+      "name": "assert tax total equals 8.25",
+      "status": "failed",
+      "start": 1757003601950,
+      "stop": 1757003602060,
+      "steps": [],
+      "attachments": [
+        {
+          "name": "checkout-page.png",
+          "source": "d452a8df-checkout-page-attachment.png",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "attachments": [
+    {
+      "name": "cart-state.json",
+      "source": "d452a8df-cart-state-attachment.json",
+      "type": "application/json"
+    }
+  ]
 }

@@ -90,6 +90,21 @@ flakiness too. If you see more tests flagged than expected, check whether
 equivalent) — leftover files from a previous local run count as extra
 observations.
 
+### Test steps and screenshots
+
+Click any row in the "All tests" table to expand it. If your Allure adapter
+recorded `steps` (nested step name/status/duration) and `attachments`
+(screenshots, page sources, logs, ...) on a result — most do, e.g.
+`allure-pytest`'s `@allure.step`, `allure-cypress`'s command logging, or an
+explicit `allure.attachment()`/`Allure.addAttachment()` call — they show up in
+that expanded row: the step tree with per-step status, image attachments as
+click-to-zoom thumbnails, and everything else as a download link. Attachment
+files themselves live next to the `*-result.json` files in `allure-results/`
+and are referenced by filename, not inlined — this action copies each one it
+finds into `data/attachments/<run-id>/` so the dashboard can serve it; nothing
+shows up here if `allure-results-path` only contains the result JSON without
+those attachment files alongside it.
+
 ### Browsing previous runs
 
 The dashboard isn't just "latest run + trend lines" — every run's full detail
