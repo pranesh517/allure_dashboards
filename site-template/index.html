@@ -69,24 +69,43 @@
         <tbody id="slowest-body"></tbody>
       </table>
     </div>
+    <div class="pager" id="slowest-pager"></div>
   </div>
 
   <div class="card">
-    <h2>All tests</h2>
+    <h2>
+      <span>All tests</span>
+      <span class="view-toggle" role="group" aria-label="Test view">
+        <button class="view-btn active" data-view="list">List</button>
+        <button class="view-btn" data-view="grouped">Grouped</button>
+      </span>
+    </h2>
     <div class="filters">
-      <input type="search" id="test-search" placeholder="Search tests or suites…">
+      <input type="search" id="test-search" placeholder="Search tests, suites, epics, stories, tags…">
       <button class="filter-chip active" data-status="all">All</button>
       <button class="filter-chip" data-status="passed">Passed</button>
       <button class="filter-chip" data-status="failed">Failed</button>
       <button class="filter-chip" data-status="broken">Broken</button>
       <button class="filter-chip" data-status="skipped">Skipped</button>
       <button class="filter-chip" data-status="flaky">Flaky</button>
+      <label class="group-by" id="group-by-wrap" hidden>Group by
+        <select id="group-by"></select>
+      </label>
     </div>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>Test</th><th>Status</th><th>Severity</th><th>Duration</th><th></th></tr></thead>
-        <tbody id="tests-body"></tbody>
-      </table>
+
+    <div id="view-list">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Test</th><th>Status</th><th>Severity</th><th>Duration</th><th></th></tr></thead>
+          <tbody id="tests-body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="tests-pager"></div>
+    </div>
+
+    <div id="view-grouped" hidden>
+      <div id="groups"></div>
+      <div class="pager" id="groups-pager"></div>
     </div>
   </div>
 

@@ -1,7 +1,8 @@
 # Allure Dashboard Action
 
 A GitHub Action that turns raw [Allure](https://allurereport.org/) test results into a
-creative, trend-aware static dashboard — ready to publish straight to GitHub Pages.
+creative, trend-aware static dashboard — published to GitHub Pages straight from your
+workflow with GitHub Actions (no `gh-pages` branch).
 Drop it into any workflow that produces an `allure-results/` directory (pytest, JUnit,
 TestNG, Cypress, Playwright, RSpec, …) — no server, no database, no build step.
 
@@ -53,6 +54,35 @@ permissions:
   id-token: write
 ```
 
+### Deploying: GitHub Actions, not a branch
+
+The dashboard is deployed by the workflow itself with `actions/upload-pages-artifact`
+and `actions/deploy-pages`. Nothing is committed to a `gh-pages` (or any other)
+branch, so there's no generated-site history in your repo, no push token to manage,
+and nothing to keep in sync.
+
+One-time repository setup: **Settings → Pages → Build and deployment → Source**,
+choose **GitHub Actions** — not "Deploy from a branch". If it's left on a branch
+source, the workflow's deploy step won't publish anything.
+
+Give the deploy job the `github-pages` environment (as every example does) so the
+page URL shows up on the run:
+
+```yaml
+environment:
+  name: github-pages
+  url: ${{ steps.deployment.outputs.page_url }}
+```
+
+That environment's default protection rules only allow deployments from the
+repository's default branch, so run the deploy on pushes to that branch (as the
+examples do) rather than on pull requests.
+
+If you're moving off an existing `gh-pages` setup: switch the Pages source to
+GitHub Actions as above, add the two deploy steps and the permissions from this
+section, and then delete the old `gh-pages` branch and any workflow step that
+pushed to it (for example `peaceiris/actions-gh-pages`).
+
 ## How it works
 
 1. Your test framework's Allure adapter writes raw `*-result.json` files (and
@@ -61,7 +91,8 @@ permissions:
 2. This action's `src/process.mjs` reads those files directly (zero npm
    dependencies — nothing to `npm install` on your runner) and aggregates them:
    status counts, suite/severity breakdowns, failure categorization, slowest
-   tests, and — by diffing each test's `historyId` against what you pass via
+   tests (the "Slowest tests" and "All tests" tables are paginated, so every
+   test in the run is reachable however large the suite is), and — by diffing each test's `historyId` against what you pass via
    `history-path` — flaky-test detection.
 3. It copies the static dashboard (`site-template/`) into `output-path` alongside
    the generated `data/*.json`, ready to upload as a Pages artifact.
@@ -75,8 +106,8 @@ Each run only sees the results from that run. To get trend lines and flaky
 detection, pass last run's `data/` directory back in via `history-path` — the
 examples use `actions/cache` keyed by branch + run id (a fresh key every run, so
 the cache's post-job save always fires) with a branch-prefixed `restore-keys` to
-pick up the latest one. A `gh-pages` branch or artifact works too, if you'd
-rather not use the cache.
+pick up the latest one. A workflow artifact works too, if you'd rather not use
+the cache. No `gh-pages` branch is involved either way.
 
 ### Flaky detection
 
@@ -113,6 +144,32 @@ that links back to the test by uuid — this action reads those too and shows
 them in a "Setup & teardown" section on the expanded row, tagged Before/After,
 so a hook-captured screenshot is visible regardless of which framework's
 adapter wrote it.
+
+### Epics, stories, tags and other metadata
+
+Every label on a result is kept — not just `epic`/`feature`/`story`/`tag` but
+also `owner`, `layer`, `package`, `host`, `framework`, and any custom label
+your adapter writes (a label can repeat, e.g. several `@Tag`s on one test).
+Epic, feature, story and tag values show as colored chips under each test's
+name and can be searched from the box above the table. Expanding a row also
+lists all of that test's metadata: labels, parameters, links (http/https only),
+description, start/finish time, stage, known/muted flags, and its
+full-name/test-case/history IDs.
+
+"All tests" has two views, switched with the **List / Grouped** toggle. List is
+the flat, paginated table. Grouped classifies the same tests, with the search
+box and status filters still applying:
+
+- **Behaviors (Epic › Feature › Story)** — the default when the run has those
+  labels; expand an epic to drill into its features, then stories, then tests.
+- **Any single label** — group by Tag, Owner, Suite, Severity, Layer, or
+  whichever labels are present in the run.
+
+Each group shows its test count, pass rate and a status bar, with failing
+groups first; tests with no value for the label land under "Unassigned". A
+test with several values (two tags, two stories) appears under each of them.
+Groups are paginated, and a group's tests load 50 at a time. Runs recorded
+before labels were captured only offer grouping by Suite and Severity.
 
 ### Browsing previous runs
 
