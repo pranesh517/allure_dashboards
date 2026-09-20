@@ -63,6 +63,36 @@ function labelValue(labels, name) {
   return hit ? hit.value : undefined;
 }
 
+// Every Allure label (epic, feature, story, tag, owner, layer, package, host,
+// thread, framework, ...) as { name: [values] }. A label name can repeat — a
+// test carrying several @Tag / @Story annotations has one label entry per
+// value — so values are collected in order and de-duplicated. Built through a
+// Map so a label literally named "__proto__" stays plain data.
+function collectLabels(labels) {
+  const byName = new Map();
+  for (const l of labels || []) {
+    if (!l || !l.name || l.value == null || l.value === '') continue;
+    const name = String(l.name);
+    const value = String(l.value);
+    if (!byName.has(name)) byName.set(name, []);
+    const values = byName.get(name);
+    if (!values.includes(value)) values.push(value);
+  }
+  return Object.fromEntries(byName);
+}
+
+function normalizeParameters(params) {
+  return (params || [])
+    .filter((p) => p && p.name)
+    .map((p) => ({ name: String(p.name), value: p.value == null ? '' : String(p.value) }));
+}
+
+function normalizeLinks(links) {
+  return (links || [])
+    .filter((l) => l && (l.url || l.name))
+    .map((l) => ({ name: String(l.name || l.url), url: l.url ? String(l.url) : null, type: l.type || 'link' }));
+}
+
 function hashOf(str) {
   return crypto.createHash('md5').update(str).digest('hex');
 }
@@ -162,8 +192,18 @@ function normalizeTest(raw) {
     suite,
     parentSuite,
     severity: SEVERITY_ORDER.includes(severity) ? severity : 'normal',
-    feature: labelValue(labels, 'feature'),
-    epic: labelValue(labels, 'epic'),
+    labels: collectLabels(labels),
+    parameters: normalizeParameters(raw.parameters),
+    links: normalizeLinks(raw.links),
+    description: raw.description || null,
+    descriptionHtml: raw.descriptionHtml || null,
+    testCaseId: raw.testCaseId || null,
+    titlePath: Array.isArray(raw.titlePath) ? raw.titlePath.map(String) : null,
+    stage: raw.stage || null,
+    known: !!raw.statusDetails?.known,
+    muted: !!raw.statusDetails?.muted,
+    start: start || null,
+    stop: stop || null,
     status,
     durationMs: Math.max(0, stop - start),
     message: raw.statusDetails?.message || null,
@@ -381,8 +421,21 @@ async function main() {
     tests: tests.map((t) => ({
       name: t.name,
       fullName: t.fullName,
+      historyId: t.historyId,
+      testCaseId: t.testCaseId,
+      titlePath: t.titlePath,
       suite: t.suite,
       severity: t.severity,
+      labels: t.labels,
+      parameters: t.parameters,
+      links: t.links,
+      description: t.description,
+      descriptionHtml: t.descriptionHtml,
+      stage: t.stage,
+      known: t.known,
+      muted: t.muted,
+      start: t.start,
+      stop: t.stop,
       status: t.status,
       durationMs: t.durationMs,
       flaky: t.flaky,
@@ -412,8 +465,11 @@ async function main() {
     }
   }
 
-  await fs.writeFile(path.join(dataDir, 'latest.json'), JSON.stringify(latest, null, 2));
-  await fs.writeFile(path.join(runsDir, `${sanitizeId(runId)}.json`), JSON.stringify(latest, null, 2));
+  // The full-run snapshots carry every test's metadata and are only ever read
+  // by the dashboard, so they're written compact — pretty-printing them
+  // roughly triples the size a browser has to download.
+  await fs.writeFile(path.join(dataDir, 'latest.json'), JSON.stringify(latest));
+  await fs.writeFile(path.join(runsDir, `${sanitizeId(runId)}.json`), JSON.stringify(latest));
   await fs.writeFile(path.join(dataDir, 'history.json'), JSON.stringify(history, null, 2));
   await fs.writeFile(path.join(dataDir, 'flaky-history.json'), JSON.stringify(flakyMap, null, 2));
   await fs.writeFile(path.join(dataDir, 'meta.json'), JSON.stringify({ title, generatedAt: new Date().toISOString() }, null, 2));
