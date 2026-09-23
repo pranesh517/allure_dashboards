@@ -33,12 +33,14 @@ searchable, filterable test explorer — light and dark mode included.
 
 That's the minimum. For trend charts and flaky-test detection across builds (the
 interesting part), you need to persist the `data/` directory between runs — see a
-complete workflow using `actions/cache` for your stack:
+complete workflow for your stack (they use `actions/cache`; the last one keeps history
+in a release asset instead — [details below](#persisting-history-across-runs)):
 
 - [examples/pytest-workflow.yml](examples/pytest-workflow.yml) — Python / pytest / allure-pytest
 - [examples/testng-workflow.yml](examples/testng-workflow.yml) — Java / TestNG / Maven / allure-testng
 - [examples/cypress-workflow.yml](examples/cypress-workflow.yml) — Node.js / Cypress / cypress-allure-plugin
 - [examples/basic-workflow.yml](examples/basic-workflow.yml) — generic template + minimum-pass-rate gate
+- [examples/durable-history-workflow.yml](examples/durable-history-workflow.yml) — same, but keeps history in a release asset so it never expires
 
 The action itself doesn't care which of these produced `allure-results/` — Allure's
 raw-results JSON is one language-agnostic format shared by every official adapter
@@ -102,12 +104,80 @@ adapters already produce, it doesn't wrap `allure generate`.
 
 ### Persisting history across runs
 
-Each run only sees the results from that run. To get trend lines and flaky
-detection, pass last run's `data/` directory back in via `history-path` — the
-examples use `actions/cache` keyed by branch + run id (a fresh key every run, so
-the cache's post-job save always fires) with a branch-prefixed `restore-keys` to
-pick up the latest one. A workflow artifact works too, if you'd rather not use
-the cache. No `gh-pages` branch is involved either way.
+Every workflow run starts on a clean runner, so the action only sees the results
+of the current run. Trend graphs, flaky detection and the run picker all come
+from **history you carry between runs** — the action doesn't store it for you.
+The loop is:
+
+1. **Restore** last run's `data/` directory to a folder (e.g. `dashboard-history`).
+2. **Run the action** with `history-path: dashboard-history`. It merges the new
+   run into that history and writes the updated site, including `data/`, to
+   `output-path`.
+3. **Save** the updated `allure-dashboard/data` back to wherever step 1 restores from.
+
+`data/` is the whole state: `history.json` (per-run rollups for the trend
+lines), `flaky-history.json`, `runs/<run-id>.json` (each run's full test list,
+for the run picker) and `attachments/<run-id>/` (that run's screenshots and
+logs). The action keeps the latest `max-history` runs (default `100`) and drops
+older ones, snapshots and attachments together, so what you save stays bounded.
+If your runs carry a lot of screenshots, lower `max-history` — the saved
+history grows with `max-history` × the attachment size per run.
+
+Where to keep it between runs is your call. Two ways, both with a complete
+workflow to copy:
+
+**`actions/cache` — the default; nothing to set up.**
+[basic](examples/basic-workflow.yml), [pytest](examples/pytest-workflow.yml),
+[TestNG](examples/testng-workflow.yml) and [Cypress](examples/cypress-workflow.yml)
+all use it. Each run saves under a fresh key (`…-<branch>-<run_id>`, so the
+post-job save always fires) and restores the newest key with the same branch
+prefix. The trade-offs:
+
+- Entries **expire after 7 days without use** — a quiet week or a holiday resets
+  your trend graphs and flaky history to empty.
+- The repo has a **10 GB cache quota**; when it fills, the oldest entries are
+  evicted, which can also reset history.
+- History is **per branch** (the branch name is in the key). A pull request
+  branch starts empty, and it can't write history back for `main`.
+
+That's fine for a project that runs tests every day or two. If a reset would
+hurt, use the next option.
+
+**A release asset — durable; nothing expires.**
+[examples/durable-history-workflow.yml](examples/durable-history-workflow.yml)
+stores `data/` as a single `history.tgz` on a release tagged
+`dashboard-history`, using the `gh` CLI that's already on GitHub's runners:
+
+```yaml
+permissions:
+  contents: write            # to create / update the release
+# ...
+- name: Restore dashboard history
+  env: { GH_TOKEN: "${{ github.token }}" }
+  run: |
+    mkdir -p dashboard-history
+    if gh release view dashboard-history >/dev/null 2>&1; then
+      gh release download dashboard-history --pattern history.tgz --dir "$RUNNER_TEMP" --clobber
+      tar -xzf "$RUNNER_TEMP/history.tgz" -C dashboard-history
+    fi
+# ... run the action with history-path: dashboard-history ...
+- name: Save dashboard history
+  if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+  env: { GH_TOKEN: "${{ github.token }}" }
+  run: |
+    tar -czf "$RUNNER_TEMP/history.tgz" -C allure-dashboard/data .
+    gh release view dashboard-history >/dev/null 2>&1 || gh release create dashboard-history \
+      --title "Allure dashboard history" --notes "Machine-managed - do not delete." --latest=false
+    gh release upload dashboard-history "$RUNNER_TEMP/history.tgz" --clobber
+```
+
+It isn't a branch — nothing is committed to your repo, and the page is still
+deployed by GitHub Actions. It does create one extra tag (`dashboard-history`)
+and a release in your Releases list, marked not-latest. Only `main` saves, so
+pull request runs read the real history but never overwrite it. A release asset
+can be up to 2 GiB. And if the release exists but the download fails, the job
+fails rather than quietly starting from empty history, which the next save
+would then make permanent.
 
 ### Flaky detection
 

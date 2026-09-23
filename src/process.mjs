@@ -448,19 +448,34 @@ async function main() {
   };
 
   // ---- write site ------------------------------------------------------
-  // Carry forward full per-run snapshots for every run still retained in
-  // `history` (after the max-history cap), so the dashboard can browse back
-  // to any previous run, not just its rollup numbers. Snapshots live under
-  // data/runs/<runId>.json and must be persisted across CI runs the same
-  // way history.json and flaky-history.json are (via --history).
-  const priorRunsDir = historyDir ? path.join(historyDir, 'runs') : null;
-  const retainedIds = new Set(history.map((r) => r.runId));
-  if (priorRunsDir && (await pathExists(priorRunsDir))) {
-    const files = await fs.readdir(priorRunsDir);
-    for (const f of files) {
-      const id = f.replace(/\.json$/, '');
-      if (retainedIds.has(id) && sanitizeId(id) + '.json' === f && id !== runId) {
-        await fs.copyFile(path.join(priorRunsDir, f), path.join(runsDir, f));
+  // Carry forward full per-run snapshots — and the attachment files (screenshots,
+  // logs, ...) they reference — for every run still retained in `history`
+  // (after the max-history cap), so the dashboard can browse back to any
+  // previous run, not just its rollup numbers. Snapshots live under
+  // data/runs/<runId>.json and attachments under data/attachments/<runId>/;
+  // both must be persisted across CI runs the same way history.json and
+  // flaky-history.json are (via --history). Runs that fall out of the
+  // max-history window are dropped here, which is what keeps the site (and the
+  // saved history) from growing without bound. Ids are compared in their
+  // sanitized on-disk form, since that's what the files are named with.
+  const retainedIds = new Set(history.map((r) => sanitizeId(r.runId)));
+  const currentId = sanitizeId(runId);
+  if (historyDir) {
+    const priorRunsDir = path.join(historyDir, 'runs');
+    if (await pathExists(priorRunsDir)) {
+      for (const f of await fs.readdir(priorRunsDir)) {
+        const id = f.replace(/\.json$/, '');
+        if (f.endsWith('.json') && retainedIds.has(id) && id !== currentId) {
+          await fs.copyFile(path.join(priorRunsDir, f), path.join(runsDir, f));
+        }
+      }
+    }
+    const priorAttachmentsDir = path.join(historyDir, 'attachments');
+    if (await pathExists(priorAttachmentsDir)) {
+      for (const entry of await fs.readdir(priorAttachmentsDir, { withFileTypes: true })) {
+        if (entry.isDirectory() && retainedIds.has(entry.name) && entry.name !== currentId) {
+          await copyDir(path.join(priorAttachmentsDir, entry.name), path.join(dataDir, 'attachments', entry.name));
+        }
       }
     }
   }
