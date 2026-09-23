@@ -249,6 +249,19 @@ The dashboard isn't just "latest run + trend lines" — every run's full detail
 of them and see that run's suites, categories, flaky tests, and full test list,
 not just its pass rate.
 
+### Requirements traceability matrix (optional)
+
+A separate, optional companion action lives in this repo at
+[`traceability/`](traceability/README.md): which requirements/epics/features
+are covered by which tests, requirements with zero tests, and tests with no
+requirement id ("orphan tests"), as its own static Pages site. It's referenced
+as its own workflow step — `pranesh517/allure_dashboards/traceability@v2` —
+so it's entirely opt-in and doesn't change anything about this action unless
+you add it. See [traceability/README.md](traceability/README.md) for inputs,
+how annotations map to Allure labels/links, and
+[traceability/examples/with-dashboard-workflow.yml](traceability/examples/with-dashboard-workflow.yml)
+for running both together with tests linking back into this dashboard.
+
 ## Inputs
 
 | Name | Required | Default | Description |
