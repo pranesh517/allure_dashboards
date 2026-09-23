@@ -1,0 +1,100 @@
+# Durable trend history: keep the dashboard's `data/` directory in a GitHub
+# release asset instead of actions/cache.
+#
+# Why: actions/cache entries are deleted after 7 days without use (and when the
+# repo's 10 GB cache quota fills up), which silently resets your trend graphs
+# and flaky-test history — e.g. after a quiet week or a holiday. A release
+# asset doesn't expire. It's not a branch either: nothing is committed to your
+# repo history, and the page is still deployed by GitHub Actions.
+#
+# How it works: one release with the fixed tag below holds a single asset,
+# history.tgz — a tarball of the dashboard's `data/` directory. Each run
+# downloads it, feeds it to the action via `history-path`, and uploads the
+# updated tarball. Runs outside `max-history` are dropped by the action, so the
+# tarball stays bounded. Only pushes to main save it, so a pull request run can
+# never overwrite the real history.
+#
+# Copy this to .github/workflows/allure-dashboard.yml in YOUR test repo and
+# replace the "Run tests" step with your actual test command.
+name: Allure Dashboard
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write # create/update the history release
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  HISTORY_TAG: dashboard-history
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- 1. Run your tests here — must produce an allure-results/ dir ----
+      - name: Run tests
+        run: echo "replace this step with your real test command"
+        # run: pytest --alluredir=allure-results
+
+      # ---- 2. Restore history from the release asset ----
+      # No release yet = first run, start fresh. If the release exists but the
+      # download fails, fail the job rather than quietly starting from zero:
+      # the next save would then overwrite the real history with an empty one.
+      - name: Restore dashboard history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dashboard-history
+          if gh release view "$HISTORY_TAG" >/dev/null 2>&1; then
+            gh release download "$HISTORY_TAG" --pattern history.tgz --dir "$RUNNER_TEMP" --clobber
+            tar -xzf "$RUNNER_TEMP/history.tgz" -C dashboard-history
+          else
+            echo "No '$HISTORY_TAG' release yet - starting with fresh history."
+          fi
+
+      # ---- 3. Build the dashboard ----
+      - name: Generate Allure dashboard
+        id: dashboard
+        uses: pranesh517/allure_dashboards@v1
+        with:
+          allure-results-path: allure-results
+          output-path: allure-dashboard
+          history-path: dashboard-history
+          dashboard-title: My Project — Test Dashboard
+          # max-history: 50   # lower this if your runs carry lots of screenshots
+
+      # ---- 4. Save history back to the release ----
+      - name: Save dashboard history
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar -czf "$RUNNER_TEMP/history.tgz" -C allure-dashboard/data .
+          gh release view "$HISTORY_TAG" >/dev/null 2>&1 || gh release create "$HISTORY_TAG" \
+            --title "Allure dashboard history" \
+            --notes "Machine-managed trend data for the Allure dashboard. Overwritten on every run - do not delete." \
+            --latest=false
+          gh release upload "$HISTORY_TAG" "$RUNNER_TEMP/history.tgz" --clobber
+
+      # ---- 5. Publish to GitHub Pages ----
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-dashboard
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

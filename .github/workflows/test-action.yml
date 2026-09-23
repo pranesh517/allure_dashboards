@@ -1,7 +1,8 @@
-# Self-test: proves the action works end-to-end for anyone who checks it out,
-# by running it against the bundled two-run fixture and asserting the output.
-# On pushes to main it also republishes the result as a live demo on this
-# repo's own GitHub Pages.
+# Self-test: proves both actions in this repo work end to end for anyone who
+# checks it out, by running each against its own bundled fixture and
+# asserting the output. On pushes to main it also republishes the result as
+# a live combined demo on this repo's own GitHub Pages: the dashboard at the
+# site root, the traceability matrix at /traceability/, cross-linked.
 name: Self-test & demo
 
 on:
@@ -78,7 +79,50 @@ jobs:
             const after = teardown && teardown.fixtures && teardown.fixtures.find((f) => f.phase === 'after');
             if (!after || !after.attachments[0] || !after.attachments[0].path) throw new Error('expected a resolved teardown-fixture attachment path');
           "
-          echo "Self-test passed."
+          echo "Dashboard self-test passed."
+
+      # ---- Traceability matrix: same idea, its own fixture, own folder ----
+      # Predicted ahead of the deploy (same technique as
+      # traceability/examples/with-dashboard-workflow.yml) so the matrix's
+      # dashboard-url is already correct when it's generated.
+      - name: Compute Pages URL
+        id: pages-url
+        run: echo "url=https://${{ github.repository_owner }}.github.io/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_OUTPUT"
+
+      - name: Run traceability action against its fixture
+        id: matrix
+        uses: ./traceability
+        with:
+          allure-results-path: traceability/examples/sample-allure-results
+          output-path: allure-dashboard/traceability
+          requirement-annotation: requirement
+          requirements-file: traceability/examples/requirements.csv
+          dashboard-url: ${{ steps.pages-url.outputs.url }}
+          title: 'Traceability Matrix — Live Demo'
+
+      - name: Assert traceability outputs are correct
+        run: |
+          set -e
+          test "${{ steps.matrix.outputs.total-requirements }}" = "4"
+          test "${{ steps.matrix.outputs.covered-requirements }}" = "3"
+          test "${{ steps.matrix.outputs.uncovered-requirements }}" = "1"
+          test "${{ steps.matrix.outputs.failing-requirements }}" = "1"
+          test "${{ steps.matrix.outputs.coverage-percent }}" = "50"
+          test "${{ steps.matrix.outputs.orphan-tests }}" = "3"
+          test -f allure-dashboard/traceability/index.html
+          test -f allure-dashboard/traceability/traceability.csv
+          test -f allure-dashboard/traceability/data/summary.json
+          node -e "
+            const d = require('./allure-dashboard/traceability/data/requirements.json');
+            const req3 = d.requirements.find((r) => r.id === 'REQ-3');
+            if (!req3 || req3.status !== 'not-covered') throw new Error('expected REQ-3 not-covered, got ' + JSON.stringify(req3));
+            const req1 = d.requirements.find((r) => r.id === 'REQ-1');
+            const link = req1 && req1.tests[0] && req1.tests[0].dashboardUrl;
+            if (!link || !link.includes('#test=')) throw new Error('expected a dashboard deep link on REQ-1\\'s first test, got ' + link);
+            const unknown = d.unknown.map((r) => r.id);
+            if (!unknown.includes('REQ-99')) throw new Error('expected REQ-99 as an unknown requirement, got ' + JSON.stringify(unknown));
+          "
+          echo "Traceability self-test passed."
 
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'

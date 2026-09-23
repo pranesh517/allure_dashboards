@@ -389,7 +389,7 @@ function labelChips(t, max = 6) {
 
 function haystack(t) {
   if (t._hay === undefined) {
-    t._hay = [t.name, t.fullName, t.suite, ...Object.values(labelsOf(t)).flat()].join('\n').toLowerCase();
+    t._hay = [t.name, t.fullName, t.suite, t.historyId, ...Object.values(labelsOf(t)).flat()].join('\n').toLowerCase();
   }
   return t._hay;
 }
@@ -782,6 +782,34 @@ async function main() {
   renderRun(latest, prevRun);
   renderTrends(history);
   setupRunPicker(history, latest);
+
+  handleDeepLink();
+  window.addEventListener('hashchange', handleDeepLink);
+}
+
+// Consumes `#test=<historyId>` — the link shape the Allure Traceability
+// Matrix action (a separate, optional companion) builds when its
+// dashboard-url input is set. Switches to the List view, clears the status
+// filter, and searches for the historyId (haystack() includes it), which
+// narrows to that one test since historyId is a stable per-test id; then
+// expands and scrolls to it. A stale link (test not in the current/selected
+// run) just leaves the search box on that historyId with no match — no error.
+function handleDeepLink() {
+  const testId = new URLSearchParams(location.hash.slice(1)).get('test');
+  if (!testId) return;
+  testsView.view = 'list';
+  document.querySelectorAll('.view-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === 'list'));
+  testsView.activeStatus = 'all';
+  document.querySelectorAll('.filter-chip').forEach((c) => c.classList.toggle('active', c.dataset.status === 'all'));
+  document.getElementById('test-search').value = testId;
+  resetAndDraw();
+  requestAnimationFrame(() => {
+    const row = document.querySelector('#tests-body tr.test-row');
+    if (row) {
+      row.scrollIntoView({ block: 'center' });
+      if (!row.classList.contains('expanded')) row.click();
+    }
+  });
 }
 
 main();

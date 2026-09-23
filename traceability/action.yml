@@ -1,0 +1,114 @@
+name: 'Allure Traceability Matrix'
+description: 'Optional companion to Allure Dashboard: turns Allure raw results (plus an optional requirements-file) into a static requirements traceability matrix on GitHub Pages. Not used unless you add this as its own step.'
+author: 'pranesh517'
+branding:
+  icon: 'check-square'
+  color: 'blue'
+
+inputs:
+  allure-results-path:
+    description: 'Path to the allure-results directory produced by your test run (the raw *-result.json files, before `allure generate`).'
+    required: true
+  requirement-annotation:
+    description: 'The name that identifies a requirement id, matched against label names and link types depending on requirement-source (e.g. "requirement", "issue", "tms", "tag").'
+    required: true
+  requirement-source:
+    description: 'Where to look for requirement-annotation: auto (labels and links, unioned), label, link, or tag (the Allure `tag` label, filtered by requirement-id-pattern).'
+    required: false
+    default: 'auto'
+  requirement-id-pattern:
+    description: 'Regex an annotation value must match to count as a requirement id. Values that do not match are ignored and listed in the Gaps tab. Matched case-insensitively unless given as /pattern/flags with your own flags. With requirement-source: tag, this is what selects which tags are requirement ids.'
+    required: false
+    default: ''
+  testcase-annotation:
+    description: 'The name that identifies a test case id (e.g. "testcase", "tms"). Left unset, or missing on a given test, falls back to that test''s fullName.'
+    required: false
+    default: ''
+  testcase-source:
+    description: 'Where to look for testcase-annotation: auto, label, link, or tag. Same semantics as requirement-source.'
+    required: false
+    default: 'auto'
+  testcase-id-pattern:
+    description: 'Regex a testcase-annotation value must match. Same semantics as requirement-id-pattern.'
+    required: false
+    default: ''
+  requirements-file:
+    description: 'Path to a CSV or JSON master list of expected requirements (columns/keys: id required; title, epic, feature, priority optional). Without this, coverage is measured against whichever requirement ids show up in the test results, and no requirement can be "not covered".'
+    required: false
+    default: ''
+  output-path:
+    description: 'Directory to write the generated traceability-matrix site into.'
+    required: false
+    default: 'traceability-report'
+  dashboard-url:
+    description: 'Base URL of an Allure Dashboard (pranesh517/allure_dashboards) site generated from the same run. When set, every test in the matrix links to that test in the dashboard.'
+    required: false
+    default: ''
+  title:
+    description: 'Title shown on the generated report.'
+    required: false
+    default: 'Traceability Matrix'
+  min-coverage:
+    description: 'Minimum requirement coverage percent (0-100). If set and coverage is lower, the step fails after writing the report.'
+    required: false
+    default: ''
+  fail-on-uncovered:
+    description: 'If true, fail the step when any requirement (from requirements-file) has zero tests.'
+    required: false
+    default: 'false'
+  fail-on-failing:
+    description: 'If true, fail the step when any requirement has a failing or broken linked test.'
+    required: false
+    default: 'false'
+
+outputs:
+  total-requirements:
+    description: 'Total requirements in the matrix (requirements-file row count if given, else distinct requirement ids seen in results).'
+    value: ${{ steps.process.outputs.total-requirements }}
+  covered-requirements:
+    description: 'Requirements with at least one linked test, of any status.'
+    value: ${{ steps.process.outputs.covered-requirements }}
+  uncovered-requirements:
+    description: 'Requirements with no linked tests (0 unless requirements-file is given).'
+    value: ${{ steps.process.outputs.uncovered-requirements }}
+  failing-requirements:
+    description: 'Requirements with at least one failing or broken linked test.'
+    value: ${{ steps.process.outputs.failing-requirements }}
+  coverage-percent:
+    description: 'Percent of requirements with all linked tests passing.'
+    value: ${{ steps.process.outputs.coverage-percent }}
+  orphan-tests:
+    description: 'Tests with no requirement id at all.'
+    value: ${{ steps.process.outputs.orphan-tests }}
+  site-path:
+    description: 'Path to the generated static report (upload this with actions/upload-pages-artifact).'
+    value: ${{ steps.process.outputs.site-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Generate traceability matrix
+      id: process
+      shell: bash
+      run: |
+        node "${{ github.action_path }}/src/process.mjs" \
+          --results "${{ inputs.allure-results-path }}" \
+          --output "${{ inputs.output-path }}" \
+          --requirement-annotation "${{ inputs.requirement-annotation }}" \
+          --requirement-source "${{ inputs.requirement-source }}" \
+          --requirement-id-pattern "${{ inputs.requirement-id-pattern }}" \
+          --testcase-annotation "${{ inputs.testcase-annotation }}" \
+          --testcase-source "${{ inputs.testcase-source }}" \
+          --testcase-id-pattern "${{ inputs.testcase-id-pattern }}" \
+          --requirements-file "${{ inputs.requirements-file }}" \
+          --dashboard-url "${{ inputs.dashboard-url }}" \
+          --title "${{ inputs.title }}" \
+          --min-coverage "${{ inputs.min-coverage }}" \
+          --fail-on-uncovered "${{ inputs.fail-on-uncovered }}" \
+          --fail-on-failing "${{ inputs.fail-on-failing }}" \
+          --site-template "${{ github.action_path }}/site-template"

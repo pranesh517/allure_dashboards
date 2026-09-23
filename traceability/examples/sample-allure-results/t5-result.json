@@ -1,0 +1,13 @@
+{
+  "uuid": "t5",
+  "historyId": "t5-footer-renders",
+  "name": "footer renders on every page",
+  "fullName": "MiscSpec.footer renders on every page",
+  "status": "passed",
+  "start": 1732000004000,
+  "stop": 1732000004120,
+  "labels": [
+    { "name": "severity", "value": "trivial" },
+    { "name": "suite", "value": "Misc Tests" }
+  ]
+}

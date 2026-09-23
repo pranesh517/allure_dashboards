@@ -1,0 +1,18 @@
+{
+  "uuid": "t2",
+  "historyId": "t2-logout",
+  "name": "user can log out",
+  "fullName": "AuthSpec.user can log out",
+  "status": "failed",
+  "start": 1732000002000,
+  "stop": 1732000002340,
+  "labels": [
+    { "name": "requirement", "value": "req-2" },
+    { "name": "severity", "value": "normal" },
+    { "name": "suite", "value": "Auth Tests" }
+  ],
+  "statusDetails": {
+    "message": "expected session cookie to be cleared",
+    "trace": "AssertionError: expected 'sid=abc123' to be undefined\n    at AuthSpec.js:41"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "uuid": "t4",
+  "historyId": "t4-invoice-totals",
+  "name": "invoice totals match the order after login",
+  "fullName": "BillingSpec.invoice totals match the order after login",
+  "status": "passed",
+  "start": 1732000003000,
+  "stop": 1732000003450,
+  "labels": [
+    { "name": "requirement", "value": "REQ-1" },
+    { "name": "requirement", "value": "REQ-4" },
+    { "name": "severity", "value": "critical" },
+    { "name": "suite", "value": "Billing Tests" }
+  ]
+}

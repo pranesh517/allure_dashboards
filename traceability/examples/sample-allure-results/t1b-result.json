@@ -1,0 +1,14 @@
+{
+  "uuid": "t1b",
+  "historyId": "t1b-login-sso",
+  "name": "user can log in with SSO",
+  "fullName": "AuthSpec.user can log in with SSO",
+  "status": "passed",
+  "start": 1732000001000,
+  "stop": 1732000001820,
+  "labels": [
+    { "name": "requirement", "value": "REQ-1" },
+    { "name": "severity", "value": "critical" },
+    { "name": "suite", "value": "Auth Tests" }
+  ]
+}
