@@ -125,6 +125,7 @@ function renderKPIs(summary) {
 
 function renderMeta(summary) {
   document.getElementById('page-title').textContent = summary.title || 'Traceability Matrix';
+  document.title = summary.title || 'Traceability Matrix';
   const denomNote = summary.denominatorSource === 'file'
     ? 'coverage is measured against your requirements-file'
     : 'no requirements-file given — coverage is measured against the requirement ids found in test results';
