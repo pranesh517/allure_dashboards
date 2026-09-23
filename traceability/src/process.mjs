@@ -23,8 +23,7 @@ import {
 import { parseRequirementsText } from './requirements-io.mjs';
 import { buildRequirementsData, buildUnknownData, buildOrphanTestsData, buildTestsData, buildSummary } from './render.mjs';
 import { buildTraceabilityCsv } from './csv-export.mjs';
-
-const SOURCES = ['auto', 'label', 'link', 'tag'];
+import { ValidationError, compilePattern, validateSource, validateMinCoverage, parseBoolInput, requirementsFileFormat } from './cli-validate.mjs';
 
 function parseArgs(argv) {
   const args = {};
@@ -72,31 +71,17 @@ async function loadRawResults(resultsDir) {
   return results;
 }
 
-// Thrown for both input-validation problems and the fail-gates at the end.
-// Caught once at the bottom of this file so a `fail()` call always halts
-// execution immediately (a bare `process.exit()` inside a helper doesn't
-// guarantee the caller stops before its next line runs).
-class TraceabilityError extends Error {}
-
+// Caught once at the bottom of this file. `fail()` throws rather than calling
+// process.exit() directly, since a bare process.exit() inside a helper
+// doesn't guarantee the caller stops before its next line runs — throwing
+// unwinds immediately and reliably, sync or async.
 function fail(message) {
-  throw new TraceabilityError(message);
-}
-
-function compilePattern(raw, inputName) {
-  if (!raw) return null;
-  try {
-    return new RegExp(raw);
-  } catch (e) {
-    fail(`"${inputName}" is not a valid regular expression: ${raw}\n${e.message}`);
-  }
+  throw new ValidationError(message);
 }
 
 function annotationConfig(args, prefix) {
   const annotation = args[`${prefix}-annotation`] || null;
-  const source = args[`${prefix}-source`] || 'auto';
-  if (!SOURCES.includes(source)) {
-    fail(`"${prefix}-source" must be one of ${SOURCES.join(', ')}, got "${source}".`);
-  }
+  const source = validateSource(args[`${prefix}-source`] || 'auto', `${prefix}-source`);
   const pattern = compilePattern(args[`${prefix}-id-pattern`], `${prefix}-id-pattern`);
   return { annotation, source, pattern };
 }
@@ -104,19 +89,13 @@ function annotationConfig(args, prefix) {
 async function loadRequirementsFile(filePath) {
   if (!filePath) return [];
   if (!(await pathExists(filePath))) fail(`requirements-file not found: ${filePath}`);
-  const ext = path.extname(filePath).toLowerCase();
-  const format = ext === '.json' ? 'json' : ext === '.csv' ? 'csv' : null;
-  if (!format) fail(`requirements-file must end in .csv or .json, got: ${filePath}`);
+  const format = requirementsFileFormat(filePath);
   const text = await fs.readFile(filePath, 'utf8');
   try {
     return parseRequirementsText(text, format);
   } catch (e) {
     fail(`requirements-file (${filePath}): ${e.message}`);
   }
-}
-
-function parseBoolInput(v) {
-  return String(v).trim().toLowerCase() === 'true';
 }
 
 function writeOutputs(lines) {
@@ -137,15 +116,9 @@ async function main() {
 
   const requirementRows = await loadRequirementsFile(args['requirements-file']);
 
-  let minCoverage = null;
-  if (args['min-coverage'] !== undefined && args['min-coverage'] !== '') {
-    minCoverage = Number(args['min-coverage']);
-    if (!Number.isFinite(minCoverage) || minCoverage < 0 || minCoverage > 100) {
-      fail(`"min-coverage" must be a number between 0 and 100, got: ${args['min-coverage']}`);
-    }
-  }
-  const failOnUncovered = parseBoolInput(args['fail-on-uncovered'] || 'false');
-  const failOnFailing = parseBoolInput(args['fail-on-failing'] || 'false');
+  const minCoverage = validateMinCoverage(args['min-coverage'], 'min-coverage');
+  const failOnUncovered = parseBoolInput(args['fail-on-uncovered']);
+  const failOnFailing = parseBoolInput(args['fail-on-failing']);
 
   const outputDir = args.output || 'traceability-report';
   const title = args.title || 'Traceability Matrix';
@@ -187,6 +160,7 @@ async function main() {
     byFeature,
     totalTests: tests.length,
     retryCounts,
+    dashboardUrl,
   });
   const requirementsData = buildRequirementsData(requirements, dashboardUrl);
   const unknownData = buildUnknownData(unknown, dashboardUrl);
@@ -230,7 +204,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  const message = e instanceof TraceabilityError ? e.message : e.stack || String(e);
+  const message = e instanceof ValidationError ? e.message : e.stack || String(e);
   console.error(`::error::${message}`);
   process.exitCode = 1;
 });

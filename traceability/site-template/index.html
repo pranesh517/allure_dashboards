@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traceability Matrix</title>
+<link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body>
+<div class="wrap" id="app">
+
+  <div class="hero">
+    <div>
+      <h1 id="page-title">Traceability Matrix</h1>
+      <div class="sub" id="run-meta">Loading…</div>
+    </div>
+    <div class="hero-actions">
+      <a class="icon-btn" id="dashboard-link" href="#" hidden>↗ Dashboard</a>
+      <a class="icon-btn" href="./traceability.csv" download>⬇ Download CSV</a>
+      <button id="theme-toggle" class="icon-btn" title="Toggle light / dark">🌓 Theme</button>
+    </div>
+  </div>
+
+  <div class="grid kpi-grid" id="kpi-grid"></div>
+
+  <div class="card">
+    <h2>
+      <span>Coverage by</span>
+      <span class="tabs" id="group-by-tabs">
+        <button class="tab-btn active" data-group="epic">Epic</button>
+        <button class="tab-btn" data-group="feature">Feature</button>
+      </span>
+    </h2>
+    <div class="group-bars" id="group-bars"></div>
+  </div>
+
+  <div class="card">
+    <h2>
+      <span class="tabs" id="view-tabs">
+        <button class="tab-btn active" data-tab="matrix">Matrix</button>
+        <button class="tab-btn" data-tab="tests">Tests</button>
+        <button class="tab-btn" data-tab="orphans">Orphan Tests</button>
+        <button class="tab-btn" data-tab="gaps">Gaps</button>
+      </span>
+    </h2>
+
+    <div id="panel-matrix">
+      <div class="filters">
+        <input type="search" id="matrix-search" placeholder="Search requirement id, title, epic, feature…">
+        <button class="filter-chip active" data-status="all">All</button>
+        <button class="filter-chip" data-status="passing">Passing</button>
+        <button class="filter-chip" data-status="failing">Failing</button>
+        <button class="filter-chip" data-status="partial">Partial</button>
+        <button class="filter-chip" data-status="skipped">Skipped</button>
+        <button class="filter-chip" data-status="not-covered">Not covered</button>
+      </div>
+      <div id="group-filter-badge" hidden></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Requirement</th><th>Epic</th><th>Feature</th><th>Priority</th><th>Tests</th><th>Status</th><th></th></tr></thead>
+          <tbody id="matrix-body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="matrix-pager"></div>
+    </div>
+
+    <div id="panel-tests" hidden>
+      <div class="filters">
+        <input type="search" id="tests-search" placeholder="Search test name, test case id, suite…">
+        <button class="filter-chip active" data-status="all">All</button>
+        <button class="filter-chip" data-status="passed">Passed</button>
+        <button class="filter-chip" data-status="failed">Failed</button>
+        <button class="filter-chip" data-status="broken">Broken</button>
+        <button class="filter-chip" data-status="skipped">Skipped</button>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Test</th><th>Suite</th><th>Requirements</th><th>Status</th><th>Duration</th></tr></thead>
+          <tbody id="tests-body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="tests-pager"></div>
+    </div>
+
+    <div id="panel-orphans" hidden>
+      <p class="sub" id="orphans-note" style="color:var(--text-secondary); font-size:12.5px; margin:-4px 0 12px;"></p>
+      <div class="filters">
+        <input type="search" id="orphans-search" placeholder="Search test name, test case id, suite…">
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Test</th><th>Suite</th><th>Severity</th><th>Status</th><th>Duration</th></tr></thead>
+          <tbody id="orphans-body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="orphans-pager"></div>
+    </div>
+
+    <div id="panel-gaps" hidden>
+      <div class="gap-section">
+        <h3>Not-covered requirements <span class="count" id="gaps-not-covered-count"></span></h3>
+        <div id="gaps-not-covered"></div>
+      </div>
+      <div class="gap-section">
+        <h3>Unknown requirement ids <span class="count" id="gaps-unknown-count"></span></h3>
+        <div id="gaps-unknown"></div>
+      </div>
+      <div class="gap-section">
+        <h3>Values ignored by the id pattern <span class="count" id="gaps-ignored-count"></span></h3>
+        <div id="gaps-ignored"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Traceability matrix for <a href="https://github.com/pranesh517/allure_dashboards" target="_blank" rel="noopener">allure_dashboards</a>, built from Allure raw results.
+  </div>
+</div>
+
+<script type="module" src="./assets/js/app.js"></script>
+</body>
+</html>

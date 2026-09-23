@@ -73,6 +73,7 @@ export function buildSummary({
   byFeature,
   totalTests,
   retryCounts,
+  dashboardUrl,
 }) {
   const retriedCount = [...retryCounts.values()].filter((n) => n > 1).length;
   return {
@@ -87,5 +88,6 @@ export function buildSummary({
     retriedTests: retriedCount,
     byEpic,
     byFeature,
+    dashboardUrl: dashboardUrl ? String(dashboardUrl).replace(/#.*$/, '').replace(/\/+$/, '') : null,
   };
 }
