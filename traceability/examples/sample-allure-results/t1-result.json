@@ -1,0 +1,15 @@
+{
+  "uuid": "t1",
+  "historyId": "t1-login-password",
+  "name": "user can log in with a password",
+  "fullName": "AuthSpec.user can log in with a password",
+  "status": "passed",
+  "start": 1732000000000,
+  "stop": 1732000000610,
+  "labels": [
+    { "name": "requirement", "value": "REQ-1" },
+    { "name": "testcase", "value": "TC-100" },
+    { "name": "severity", "value": "critical" },
+    { "name": "suite", "value": "Auth Tests" }
+  ]
+}

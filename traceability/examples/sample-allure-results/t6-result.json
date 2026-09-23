@@ -1,0 +1,14 @@
+{
+  "uuid": "t6",
+  "historyId": "t6-legacy-export",
+  "name": "legacy CSV export still works",
+  "fullName": "LegacySpec.legacy CSV export still works",
+  "status": "passed",
+  "start": 1732000005000,
+  "stop": 1732000005980,
+  "labels": [
+    { "name": "requirement", "value": "REQ-99" },
+    { "name": "severity", "value": "minor" },
+    { "name": "suite", "value": "Legacy Tests" }
+  ]
+}

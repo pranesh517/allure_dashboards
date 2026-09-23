@@ -1,0 +1,16 @@
+{
+  "uuid": "t8",
+  "historyId": "t8-checkout-safari-retry",
+  "name": "checkout succeeds on Safari after retry",
+  "fullName": "CheckoutSpec.checkout succeeds on Safari after retry",
+  "status": "passed",
+  "start": 1732000007000,
+  "stop": 1732000007410,
+  "labels": [
+    { "name": "severity", "value": "blocker" },
+    { "name": "suite", "value": "Checkout Tests" }
+  ],
+  "links": [
+    { "name": "BUG-501", "type": "issue" }
+  ]
+}

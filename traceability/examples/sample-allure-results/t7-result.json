@@ -1,0 +1,20 @@
+{
+  "uuid": "t7",
+  "historyId": "t7-checkout-safari",
+  "name": "checkout fails on Safari",
+  "fullName": "CheckoutSpec.checkout fails on Safari",
+  "status": "failed",
+  "start": 1732000006000,
+  "stop": 1732000006560,
+  "labels": [
+    { "name": "severity", "value": "blocker" },
+    { "name": "suite", "value": "Checkout Tests" }
+  ],
+  "links": [
+    { "name": "BUG-501", "type": "issue", "url": "https://issues.example.com/browse/BUG-501" }
+  ],
+  "statusDetails": {
+    "message": "payment form never becomes interactive",
+    "trace": "TimeoutError: waiting for locator('#pay-button') to be enabled\n    at CheckoutSpec.js:88"
+  }
+}
