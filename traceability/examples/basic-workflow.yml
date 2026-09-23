@@ -1,0 +1,67 @@
+# Generic example: run your tests, generate a traceability matrix, publish
+# to GitHub Pages. This action is standalone — it doesn't need the Allure
+# Dashboard action, only Allure raw results.
+#
+# Copy this to .github/workflows/allure-traceability.yml in YOUR test repo,
+# replace the "Run tests" step with your actual test command, and set
+# requirement-annotation (and, if you use one, requirements-file) to match
+# how your tests are annotated — see the README and the annotations-*.md
+# snippets in this examples/ folder.
+name: Allure Traceability Matrix
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- 1. Run your tests here — must produce an allure-results/ dir ----
+      # Examples:
+      #   pytest --alluredir=allure-results
+      #   mvn test  (with the allure-maven / allure-junit adapter configured)
+      #   npx cypress run  (with @shelex/cypress-allure-plugin)
+      - name: Run tests
+        run: echo "replace this step with your real test command"
+        # run: pytest --alluredir=allure-results
+
+      # ---- 2. Build the traceability matrix ----
+      - name: Generate traceability matrix
+        id: matrix
+        uses: pranesh517/allure_dashboards/traceability@v2
+        with:
+          allure-results-path: allure-results
+          requirement-annotation: requirement
+          requirements-file: requirements.csv # optional — omit to measure coverage against whatever ids show up in results
+          title: My Project — Traceability Matrix
+          # Any of these three fail this step (after still writing the report)
+          # when the gate isn't met — all off by default, uncomment what you want:
+          # min-coverage: '80'
+          # fail-on-uncovered: 'true'
+          # fail-on-failing: 'true'
+
+      # ---- 3. Publish to GitHub Pages ----
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ steps.matrix.outputs.site-path }}
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
