@@ -1,0 +1,9 @@
+{
+  "name": "allure-traceability-matrix",
+  "private": true,
+  "description": "Optional companion action: turns Allure raw results (plus a requirements-file) into a static requirements traceability matrix. No dependencies.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
