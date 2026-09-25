@@ -9,6 +9,7 @@
   "labels": [
     { "name": "requirement", "value": "REQ-99" },
     { "name": "severity", "value": "minor" },
-    { "name": "suite", "value": "Legacy Tests" }
+    { "name": "suite", "value": "Legacy Tests" },
+    { "name": "epic", "value": "Legacy" }
   ]
 }

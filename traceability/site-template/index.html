@@ -25,10 +25,22 @@
 
   <div class="card">
     <h2>
+      <span>Test annotation coverage</span>
+    </h2>
+    <p class="card-sub">How many of the tests carry each annotation at all — epic/feature/story are Allure's own
+      labels; the last row is whatever <code>requirement-annotation</code> is configured to, however it's sourced
+      (label, link, or tag). A low number here means tests aren't tagged, which is different from a requirement
+      having no tests.</p>
+    <div class="group-bars" id="annotation-bars"></div>
+  </div>
+
+  <div class="card">
+    <h2>
       <span>Coverage by</span>
       <span class="tabs" id="group-by-tabs">
         <button class="tab-btn active" data-group="epic">Epic</button>
         <button class="tab-btn" data-group="feature">Feature</button>
+        <button class="tab-btn" data-group="story">Story</button>
       </span>
     </h2>
     <div class="group-bars" id="group-bars"></div>
