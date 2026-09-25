@@ -44,6 +44,14 @@ jobs:
           rm -rf demo-history
           cp -r allure-dashboard/data demo-history
 
+      # Predicted ahead of the deploy (same technique as
+      # traceability/examples/with-dashboard-workflow.yml) so both the
+      # dashboard's traceability-url and the matrix's dashboard-url are
+      # already correct when each is generated below.
+      - name: Compute Pages URL
+        id: pages-url
+        run: echo "url=https://${{ github.repository_owner }}.github.io/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_OUTPUT"
+
       - name: Run action against fixture run #2 (merges history)
         id: run2
         uses: ./
@@ -54,6 +62,7 @@ jobs:
           run-id: demo-run-2
           run-label: 'Demo Build #2'
           dashboard-title: 'Allure Dashboard — Live Demo'
+          traceability-url: ${{ steps.pages-url.outputs.url }}traceability/
 
       - name: Assert outputs are correct
         run: |
@@ -79,16 +88,13 @@ jobs:
             const after = teardown && teardown.fixtures && teardown.fixtures.find((f) => f.phase === 'after');
             if (!after || !after.attachments[0] || !after.attachments[0].path) throw new Error('expected a resolved teardown-fixture attachment path');
           "
+          node -e "
+            const m = require('./allure-dashboard/data/meta.json');
+            if (!m.traceabilityUrl || !m.traceabilityUrl.endsWith('/traceability')) throw new Error('expected the dashboard to carry a traceability link, got ' + m.traceabilityUrl);
+          "
           echo "Dashboard self-test passed."
 
       # ---- Traceability matrix: same idea, its own fixture, own folder ----
-      # Predicted ahead of the deploy (same technique as
-      # traceability/examples/with-dashboard-workflow.yml) so the matrix's
-      # dashboard-url is already correct when it's generated.
-      - name: Compute Pages URL
-        id: pages-url
-        run: echo "url=https://${{ github.repository_owner }}.github.io/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_OUTPUT"
-
       - name: Run traceability action against its fixture
         id: matrix
         uses: ./traceability

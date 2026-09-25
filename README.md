@@ -257,10 +257,15 @@ are covered by which tests, requirements with zero tests, and tests with no
 requirement id ("orphan tests"), as its own static Pages site. It's referenced
 as its own workflow step — `pranesh517/allure_dashboards/traceability@v2` —
 so it's entirely opt-in and doesn't change anything about this action unless
-you add it. See [traceability/README.md](traceability/README.md) for inputs,
-how annotations map to Allure labels/links, and
+you add it. Run both together and they link to each other: a test in the
+matrix opens straight to that test in this dashboard (`dashboard-url` on the
+traceability step), and this dashboard's header gets a "↗ Traceability" link
+back (`traceability-url` on this action's step, above) — set one without the
+other and you get a one-way link, which is easy to miss, so set both. See
+[traceability/README.md](traceability/README.md) for inputs, how annotations
+map to Allure labels/links, and
 [traceability/examples/with-dashboard-workflow.yml](traceability/examples/with-dashboard-workflow.yml)
-for running both together with tests linking back into this dashboard.
+for the complete two-action workflow.
 
 ## Inputs
 
@@ -273,6 +278,7 @@ for running both together with tests linking back into this dashboard.
 | `run-label` | no | `github.run_number` | Human label shown on the dashboard. |
 | `max-history` | no | `100` | Max runs kept in trend history. |
 | `dashboard-title` | no | `Allure Dashboard` | Title shown on the dashboard. |
+| `traceability-url` | no | *(none)* | Base URL of an [Allure Traceability Matrix](traceability/README.md) site generated from the same run. When set, shows a "↗ Traceability" link in the dashboard header. Leave empty if you're not using that action — nothing else changes. |
 
 ## Outputs
 

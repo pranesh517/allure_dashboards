@@ -773,6 +773,13 @@ async function main() {
   document.getElementById('dash-title').textContent = meta.title || 'Allure Dashboard';
   document.title = meta.title || 'Allure Dashboard';
 
+  const traceabilityLink = document.getElementById('traceability-link');
+  const traceabilityHref = meta.traceabilityUrl ? safeHref(meta.traceabilityUrl) : null;
+  if (traceabilityHref) {
+    traceabilityLink.href = traceabilityHref;
+    traceabilityLink.hidden = false;
+  }
+
   if (!latest) {
     document.getElementById('app').innerHTML = '<div class="empty-state">No dashboard data found yet — run the action to generate data/latest.json.</div>';
     return;

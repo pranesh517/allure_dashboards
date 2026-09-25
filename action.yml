@@ -33,6 +33,10 @@ inputs:
     description: 'Title shown on the generated dashboard.'
     required: false
     default: 'Allure Dashboard'
+  traceability-url:
+    description: 'Base URL of an Allure Traceability Matrix site (pranesh517/allure_dashboards/traceability) generated from the same run. When set, shows a "Traceability" link in the dashboard header. Purely a link — leave empty if you are not using that action.'
+    required: false
+    default: ''
 
 outputs:
   total:
@@ -80,4 +84,5 @@ runs:
           --run-label "${{ inputs.run-label }}" \
           --max-history "${{ inputs.max-history }}" \
           --title "${{ inputs.dashboard-title }}" \
+          --traceability-url "${{ inputs.traceability-url }}" \
           --site-template "${{ github.action_path }}/site-template"
