@@ -157,6 +157,40 @@ hygiene, the other is requirement coverage sliced by story. Both are in
 `data/summary.json` (`annotationCoverage`, `byEpic`, `byFeature`, `byStory`)
 if you want to consume them directly instead of via the page.
 
+## No dedicated requirement id? Point it at epic, feature, or story
+
+`requirement-annotation` is required, but a lot of suites don't have a
+formal requirement/ticket id on every test — only Allure's own
+`@Epic`/`@Feature`/`@Story`. That's fine: point `requirement-annotation` at
+whichever of those is the closest thing you have to a traceable unit (a
+Feature usually maps to a requirement better than an Epic — an Epic tends to
+be a whole theme, e.g. "Checkout", where a Feature is closer to one
+requirement, e.g. "Guest checkout"). Everything else on the page still
+works, with a few things worth expecting to be different:
+
+```yaml
+requirement-annotation: feature   # or: epic / story — whichever fits your suite
+requirement-source: label         # epic/feature/story are always plain labels, never links
+# no requirement-id-pattern — their values are free text, not a fixed id format
+# no requirements-file, unless you maintain one — coverage is then measured
+# against whichever feature values actually show up in your results
+```
+
+| | With a real requirement id (custom label, `@TmsLink`, `@Issue`, a matching tag) | With `requirement-annotation` pointed at epic/feature/story |
+|---|---|---|
+| Matrix rows | Your requirement ids/ticket numbers | The epic/feature/story values themselves — a Feature *is* the requirement here |
+| `not-covered` | Real, once you add a `requirements-file` — a requirement with zero tests shows up | Effectively never on its own: without a master list, every row in the matrix came from at least one test by construction. Add a `requirements-file` (id = your feature names) to get real not-covered detection anyway |
+| Orphan tests / Gaps | Tests with no formal id at all — usually the smaller, more actionable group | Tests with no `@Epic`/`@Feature`/`@Story` — often larger, since a lot of suites tag inconsistently at first |
+| "Test annotation coverage" | Epic/Feature/Story all shown separately from the Requirement row | The fixed row matching your choice is dropped (no duplicate "Feature" shown twice) |
+| "Coverage by" Epic/Feature/Story tabs | A genuinely different, useful cross-cut — e.g. "which epics have failing requirements" | Still useful, but one tab now restates the Matrix (e.g. "Coverage by Feature" when `requirement-annotation: feature`); the *other* two (Epic, Story) are where the new information is |
+| Matrix's own Epic/Feature columns | From `requirements-file`'s columns if you gave one | Resolved from the covering tests' own labels — so a Feature-as-requirement row still shows its real Epic, not "—" |
+
+None of this is a one-way door: add a real requirement id system later (Jira,
+TestRail, a `@Requirement` label your team defines) and just repoint
+`requirement-annotation` at it — Epic/Feature/Story keep working exactly as
+they did before, as their own "Coverage by" tabs and annotation-coverage
+rows, independent of whatever the requirement id turns out to be.
+
 ## Inputs
 
 | Input | Required | Default | Meaning |
