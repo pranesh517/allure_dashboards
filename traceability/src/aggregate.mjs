@@ -158,6 +158,30 @@ export function countTestsWithLabel(tests, labelName) {
   return { count, rate: pct(count, tests.length) };
 }
 
+// How many tests carry each of Epic/Feature/Story at all, plus a row for
+// whichever annotation is actually configured as `requirement-annotation`
+// (using requirementIds/orphans — already respects source/pattern — rather
+// than assuming "requirement" is a label name itself). A team with no
+// dedicated requirement id often points requirement-annotation straight at
+// "epic" or "feature"; when that happens the matching fixed row is dropped
+// instead of showing the identical count twice under two names.
+export function buildAnnotationCoverage(tests, orphans, requirementAnnotation) {
+  const rows = [
+    { name: 'Epic', key: 'epic', ...countTestsWithLabel(tests, 'epic') },
+    { name: 'Feature', key: 'feature', ...countTestsWithLabel(tests, 'feature') },
+    { name: 'Story', key: 'story', ...countTestsWithLabel(tests, 'story') },
+  ]
+    .filter((row) => row.key !== requirementAnnotation.toLowerCase())
+    .map(({ key, ...row }) => row);
+  rows.push({
+    name: requirementAnnotation.charAt(0).toUpperCase() + requirementAnnotation.slice(1),
+    count: tests.length - orphans.count,
+    rate: pct(tests.length - orphans.count, tests.length),
+    isRequirement: true,
+  });
+  return rows;
+}
+
 // Every ignored-by-pattern value across all tests, deduped, so the Gaps tab
 // can list "these annotation values looked like ids but didn't match your
 // pattern" instead of the viewer having to guess why a test seems untraced.

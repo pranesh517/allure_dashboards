@@ -13,6 +13,7 @@ import {
   coverageByGroup,
   countTestsWithLabel,
   resolveGroupValues,
+  buildAnnotationCoverage,
 } from '../src/aggregate.mjs';
 
 const CFG = { requirement: { annotation: 'requirement', source: 'auto', pattern: null }, testcase: { annotation: null } };
@@ -222,4 +223,21 @@ test('resolveGroupValues: falls back to the union of covering tests\' label valu
 test('resolveGroupValues: no file column and no test carries the label -> empty array, not ["Unassigned"]', () => {
   const req = { story: null, tests: [t({ uuid: 'a' })] };
   assert.deepEqual(resolveGroupValues(req, 'story'), []);
+});
+
+test('buildAnnotationCoverage: normal case has all four rows, Epic/Feature/Story plus Requirement', () => {
+  const tests = [t({ uuid: 'a', epic: 'E', requirements: ['REQ-1'] }), t({ uuid: 'b' })];
+  const orphans = { count: 1, rate: 50 };
+  const rows = buildAnnotationCoverage(tests, orphans, 'requirement');
+  assert.deepEqual(rows.map((r) => r.name), ['Epic', 'Feature', 'Story', 'Requirement']);
+  assert.equal(rows.find((r) => r.name === 'Requirement').count, 1);
+  assert.equal(rows.find((r) => r.name === 'Requirement').isRequirement, true);
+});
+
+test('buildAnnotationCoverage: requirement-annotation set to "epic" drops the now-redundant Epic row, matched case-insensitively', () => {
+  const tests = [t({ uuid: 'a', epic: 'OrangeHRM' }), t({ uuid: 'b', epic: 'OrangeHRM' })];
+  const orphans = { count: 0, rate: 0 }; // every test "has" epic, so 0 orphans under this config
+  const rows = buildAnnotationCoverage(tests, orphans, 'Epic');
+  assert.deepEqual(rows.map((r) => r.name), ['Feature', 'Story', 'Epic']);
+  assert.equal(rows[2].count, 2);
 });

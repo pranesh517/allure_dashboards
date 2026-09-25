@@ -235,7 +235,10 @@ const matrixView = { requirements: [], activeStatus: 'all', pager: null };
 
 function requirementMatches(r, q) {
   if (!q) return true;
-  const hay = [r.id, r.title, r.epic, r.feature, r.priority].filter(Boolean).join('\n').toLowerCase();
+  const hay = [r.id, r.title, r.epic, r.feature, r.priority, ...Object.values(r.groups || {}).flat()]
+    .filter(Boolean)
+    .join('\n')
+    .toLowerCase();
   return hay.includes(q);
 }
 
@@ -248,12 +251,24 @@ function filteredRequirements() {
   });
 }
 
+// requirements-file column if given, else whatever `groups` (see render.mjs)
+// resolved from the requirement's covering tests — the same fallback the
+// "Coverage by" filter already uses, so the table doesn't show "—" for an
+// answer the report actually has (common with no requirements-file at all).
+function groupDisplay(r, label) {
+  if (r[label]) return r[label];
+  const values = r.groups?.[label];
+  return values && values.length ? values.join(', ') : null;
+}
+
 function requirementRow(r) {
+  const epic = groupDisplay(r, 'epic');
+  const feature = groupDisplay(r, 'feature');
   const row = el(`
     <tr class="row-clickable" id="req-row-${escapeHtml(r.key || r.id)}">
       <td><div class="req-id">${escapeHtml(r.id)}</div>${r.title ? `<div class="req-title">${escapeHtml(r.title)}</div>` : ''}</td>
-      <td>${r.epic ? `<span class="tag">${escapeHtml(r.epic)}</span>` : '—'}</td>
-      <td>${r.feature ? `<span class="tag">${escapeHtml(r.feature)}</span>` : '—'}</td>
+      <td>${epic ? `<span class="tag">${escapeHtml(epic)}</span>` : '—'}</td>
+      <td>${feature ? `<span class="tag">${escapeHtml(feature)}</span>` : '—'}</td>
       <td>${r.priority ? escapeHtml(r.priority) : '—'}</td>
       <td class="num">${r.testCount}</td>
       <td>${chip(r.status, REQ_STATUS_META)}</td>
@@ -388,8 +403,8 @@ function renderGaps(summary, requirementsData, ignoredValues) {
     ncHost.innerHTML = `<div class="table-scroll"><table><thead><tr><th>Requirement</th><th>Epic</th><th>Feature</th><th>Priority</th></tr></thead><tbody>${notCovered.map((r) => `
       <tr class="row-clickable" data-jump="${escapeHtml(r.key || r.id)}">
         <td><div class="req-id">${escapeHtml(r.id)}</div>${r.title ? `<div class="req-title">${escapeHtml(r.title)}</div>` : ''}</td>
-        <td>${r.epic ? escapeHtml(r.epic) : '—'}</td>
-        <td>${r.feature ? escapeHtml(r.feature) : '—'}</td>
+        <td>${groupDisplay(r, 'epic') ? escapeHtml(groupDisplay(r, 'epic')) : '—'}</td>
+        <td>${groupDisplay(r, 'feature') ? escapeHtml(groupDisplay(r, 'feature')) : '—'}</td>
         <td>${r.priority ? escapeHtml(r.priority) : '—'}</td>
       </tr>`).join('')}</tbody></table></div>`;
     ncHost.querySelectorAll('[data-jump]').forEach((row) => row.addEventListener('click', () => jumpToRequirement(row.dataset.jump)));
