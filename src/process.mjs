@@ -292,6 +292,7 @@ async function main() {
   const runLabel = args['run-label'] || runId;
   const maxHistory = parseInt(args['max-history'] || '100', 10);
   const title = args.title || 'Allure Dashboard';
+  const traceabilityUrl = args['traceability-url'] || null;
   const siteTemplate = args['site-template'];
 
   if (!resultsDir || !(await pathExists(resultsDir))) {
@@ -487,7 +488,18 @@ async function main() {
   await fs.writeFile(path.join(runsDir, `${sanitizeId(runId)}.json`), JSON.stringify(latest));
   await fs.writeFile(path.join(dataDir, 'history.json'), JSON.stringify(history, null, 2));
   await fs.writeFile(path.join(dataDir, 'flaky-history.json'), JSON.stringify(flakyMap, null, 2));
-  await fs.writeFile(path.join(dataDir, 'meta.json'), JSON.stringify({ title, generatedAt: new Date().toISOString() }, null, 2));
+  await fs.writeFile(
+    path.join(dataDir, 'meta.json'),
+    JSON.stringify(
+      {
+        title,
+        generatedAt: new Date().toISOString(),
+        traceabilityUrl: traceabilityUrl ? traceabilityUrl.replace(/#.*$/, '').replace(/\/+$/, '') : null,
+      },
+      null,
+      2,
+    ),
+  );
 
   // ---- outputs -----------------------------------------------------------
   const outputLines = [

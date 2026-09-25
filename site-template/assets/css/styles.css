@@ -136,6 +136,10 @@ html, body {
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .icon-btn:hover { background: rgba(255,255,255,0.22); }
 

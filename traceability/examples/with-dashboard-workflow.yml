@@ -1,10 +1,13 @@
 # Runs the Allure Dashboard action and the Allure Traceability Matrix action
 # together from one test run, and publishes both to the same GitHub Pages
 # site: the dashboard at the site root, the traceability matrix at
-# /traceability/. Each test in the matrix links back to its row in the
-# dashboard (dashboard-url), and the dashboard's own trend history works the
-# same as it would without the matrix (see the dashboard action's own
-# examples/ for actions/cache vs. durable release-asset history options).
+# /traceability/, linked to each other both ways — a test in the matrix opens
+# straight to that test in the dashboard (dashboard-url), and the dashboard's
+# header gets a "Traceability" link back (traceability-url). Set only one of
+# the two and you get a one-way link, which is easy to miss — this example
+# sets both. The dashboard's own trend history works the same as it would
+# without the matrix (see the dashboard action's own examples/ for
+# actions/cache vs. durable release-asset history options).
 #
 # Copy this to .github/workflows/allure-reports.yml, replace "Run tests",
 # and set requirement-annotation (and requirements-file, if you use one) to
@@ -66,6 +69,7 @@ jobs:
           output-path: site
           history-path: dashboard-history
           dashboard-title: My Project — Test Dashboard
+          traceability-url: ${{ steps.pages-url.outputs.url }}traceability/
 
       - name: Save dashboard history
         run: |
