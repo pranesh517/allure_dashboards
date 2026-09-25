@@ -3,6 +3,15 @@
 // data/tests.json. Pure — no fs — so it's node:test-able; process.mjs does
 // the actual writing.
 
+import { resolveGroupValues } from './aggregate.mjs';
+
+// Every label the report's "Coverage by" tabs can group requirements by.
+// Sent per-requirement (see requirementEntry below) so the static site can
+// filter the Matrix tab on a bar click without needing each test's full
+// label set client-side — resolveGroupValues() already mirrors exactly how
+// coverageByGroup() itself decided a requirement's group.
+const GROUP_LABELS = ['epic', 'feature', 'story'];
+
 // `dashboardUrl#test=<historyId>` is a deep link the Allure Dashboard action
 // understands (it pre-fills the search box with the historyId and expands
 // the matching row) when both actions are used together and the dashboard
@@ -31,6 +40,8 @@ function testSummary(t, dashboardUrl) {
 }
 
 function requirementEntry(r, dashboardUrl) {
+  const groups = {};
+  for (const label of GROUP_LABELS) groups[label] = resolveGroupValues(r, label);
   return {
     id: r.id,
     key: r.key,
@@ -40,6 +51,7 @@ function requirementEntry(r, dashboardUrl) {
     priority: r.priority,
     status: r.status,
     testCount: r.tests.length,
+    groups,
     tests: r.tests.map((t) => testSummary(t, dashboardUrl)),
   };
 }
@@ -71,6 +83,8 @@ export function buildSummary({
   ignoredValues,
   byEpic,
   byFeature,
+  byStory,
+  annotationCoverage,
   totalTests,
   retryCounts,
   dashboardUrl,
@@ -88,6 +102,8 @@ export function buildSummary({
     retriedTests: retriedCount,
     byEpic,
     byFeature,
+    byStory,
+    annotationCoverage,
     dashboardUrl: dashboardUrl ? String(dashboardUrl).replace(/#.*$/, '').replace(/\/+$/, '') : null,
   };
 }
