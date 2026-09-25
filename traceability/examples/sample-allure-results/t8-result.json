@@ -8,7 +8,10 @@
   "stop": 1732000007410,
   "labels": [
     { "name": "severity", "value": "blocker" },
-    { "name": "suite", "value": "Checkout Tests" }
+    { "name": "suite", "value": "Checkout Tests" },
+    { "name": "epic", "value": "Checkout" },
+    { "name": "feature", "value": "Payments" },
+    { "name": "story", "value": "Card payment" }
   ],
   "links": [
     { "name": "BUG-501", "type": "issue" }

@@ -13,7 +13,10 @@ function t(overrides) {
       name: overrides.name || 'test',
       fullName: overrides.fullName || overrides.name || 'test',
       status: overrides.status || 'passed',
-      labels: (overrides.requirements || []).map((v) => ({ name: 'requirement', value: v })),
+      labels: [
+        ...(overrides.requirements || []).map((v) => ({ name: 'requirement', value: v })),
+        ...(overrides.story ? [{ name: 'story', value: overrides.story }] : []),
+      ],
       links: [],
     },
     CFG,
@@ -27,6 +30,14 @@ test('buildRequirementsData nests test summaries with a dashboard deep link', ()
   assert.equal(out.length, 1);
   assert.equal(out[0].testCount, 1);
   assert.equal(out[0].tests[0].dashboardUrl, 'https://example.com/dashboard#test=h-a');
+  assert.deepEqual(out[0].groups, { epic: ['E'], feature: ['F'], story: [] });
+});
+
+test('buildRequirementsData: groups.story falls back to the covering tests\' story labels (no file column exists for story)', () => {
+  const test1 = t({ uuid: 'a', requirements: ['REQ-1'], story: 'Password login' });
+  const requirements = [{ id: 'REQ-1', key: 'REQ-1', title: null, epic: null, feature: null, priority: null, status: 'passing', tests: [test1] }];
+  const out = buildRequirementsData(requirements, null);
+  assert.deepEqual(out[0].groups.story, ['Password login']);
 });
 
 test('buildRequirementsData omits dashboardUrl entirely when not configured', () => {
@@ -56,11 +67,15 @@ test('buildSummary counts retried tests (group size > 1) without exposing the ra
     ignoredValues: [{ value: 'x' }],
     byEpic: [],
     byFeature: [],
+    byStory: [],
+    annotationCoverage: [{ name: 'Epic', count: 3, rate: 60 }, { name: 'Requirement', count: 1, rate: 20, isRequirement: true }],
     totalTests: 5,
     retryCounts: new Map([['h1', 1], ['h2', 3], ['h3', 2]]),
   });
   assert.equal(summary.retriedTests, 2);
   assert.equal(summary.unknownRequirements, 1);
   assert.equal(summary.ignoredValues, 1);
+  assert.deepEqual(summary.byStory, []);
+  assert.equal(summary.annotationCoverage.length, 2);
   assert.equal(typeof JSON.stringify(summary), 'string');
 });

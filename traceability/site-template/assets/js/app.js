@@ -141,7 +141,24 @@ function renderMeta(summary) {
 }
 
 // ---- coverage by epic/feature ------------------------------------------
-const groupState = { data: { epic: [], feature: [] }, active: 'epic', filter: null };
+// ---- test annotation coverage (epic/feature/story labels vs the configured
+// requirement annotation) — a flat comparison, not a drill-down, so these
+// rows aren't clickable like the "Coverage by" ones below.
+function renderAnnotationCoverage(rows, totalTests) {
+  const host = document.getElementById('annotation-bars');
+  if (!rows || !rows.length) {
+    host.innerHTML = '<div class="empty-state">No annotations to compare.</div>';
+    return;
+  }
+  host.innerHTML = rows.map((r) => `
+    <div class="group-bar-row static${r.isRequirement ? ' requirement-row' : ''}">
+      <span class="name">${escapeHtml(r.name)}</span>
+      <span class="track"><span class="fill" style="width:${r.rate}%"></span></span>
+      <span class="stat">${r.count.toLocaleString()} of ${totalTests.toLocaleString()} tests · ${r.rate}%</span>
+    </div>`).join('');
+}
+
+const groupState = { data: { epic: [], feature: [], story: [] }, active: 'epic', filter: null };
 
 function renderGroupBars() {
   const rows = groupState.data[groupState.active] || [];
@@ -226,8 +243,7 @@ function filteredRequirements() {
   const q = document.getElementById('matrix-search').value.trim().toLowerCase();
   return matrixView.requirements.filter((r) => {
     const statusOk = matrixView.activeStatus === 'all' || r.status === matrixView.activeStatus;
-    const groupOk = !groupState.filter || (r[groupState.filter.label] === groupState.filter.value)
-      || (!r[groupState.filter.label] && r.tests.some((t) => (t.labels || {})[groupState.filter.label]?.includes?.(groupState.filter.value)));
+    const groupOk = !groupState.filter || (r.groups?.[groupState.filter.label] || []).includes(groupState.filter.value);
     return statusOk && groupOk && requirementMatches(r, q);
   });
 }
@@ -448,7 +464,8 @@ async function main() {
 
   renderMeta(summary);
   renderKPIs(summary);
-  groupState.data = { epic: summary.byEpic || [], feature: summary.byFeature || [] };
+  renderAnnotationCoverage(summary.annotationCoverage, summary.totalTests);
+  groupState.data = { epic: summary.byEpic || [], feature: summary.byFeature || [], story: summary.byStory || [] };
   renderGroupBars();
 
   matrixView.requirements = requirementsData.requirements;

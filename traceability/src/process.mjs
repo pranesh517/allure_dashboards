@@ -19,6 +19,8 @@ import {
   computeOrphanTests,
   collectIgnoredValues,
   coverageByGroup,
+  countTestsWithLabel,
+  pct,
 } from './aggregate.mjs';
 import { parseRequirementsText } from './requirements-io.mjs';
 import { buildRequirementsData, buildUnknownData, buildOrphanTestsData, buildTestsData, buildSummary } from './render.mjs';
@@ -136,6 +138,26 @@ async function main() {
   const ignoredValues = collectIgnoredValues(tests);
   const byEpic = coverageByGroup(requirements, 'epic');
   const byFeature = coverageByGroup(requirements, 'feature');
+  const byStory = coverageByGroup(requirements, 'story');
+
+  // How many tests carry each annotation at all, regardless of whether it
+  // maps to anything in a requirements-file. Epic/feature/story are always
+  // plain Allure labels; the requirement row uses requirementIds (already
+  // respects whatever source/pattern is configured — a label, a link, or a
+  // tag) rather than assuming "requirement" is itself a label name, and its
+  // display name follows requirement-annotation so it reads correctly for a
+  // team using e.g. requirement-annotation: issue instead.
+  const annotationCoverage = [
+    { name: 'Epic', ...countTestsWithLabel(tests, 'epic') },
+    { name: 'Feature', ...countTestsWithLabel(tests, 'feature') },
+    { name: 'Story', ...countTestsWithLabel(tests, 'story') },
+    {
+      name: requirementCfg.annotation.charAt(0).toUpperCase() + requirementCfg.annotation.slice(1),
+      count: tests.length - orphans.count,
+      rate: pct(tests.length - orphans.count, tests.length),
+      isRequirement: true,
+    },
+  ];
 
   // ---- write site shell, then data ----------------------------------------
   const siteTemplate = args['site-template'];
@@ -158,6 +180,8 @@ async function main() {
     ignoredValues,
     byEpic,
     byFeature,
+    byStory,
+    annotationCoverage,
     totalTests: tests.length,
     retryCounts,
     dashboardUrl,

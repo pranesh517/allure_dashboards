@@ -122,6 +122,17 @@ jobs:
             const unknown = d.unknown.map((r) => r.id);
             if (!unknown.includes('REQ-99')) throw new Error('expected REQ-99 as an unknown requirement, got ' + JSON.stringify(unknown));
           "
+          node -e "
+            const s = require('./allure-dashboard/traceability/data/summary.json');
+            const byName = Object.fromEntries(s.annotationCoverage.map((a) => [a.name, a]));
+            if (byName.Epic.count !== 7) throw new Error('expected 7 tests tagged with epic, got ' + JSON.stringify(byName.Epic));
+            if (byName.Requirement.count !== 5) throw new Error('expected 5 tests tagged with requirement, got ' + JSON.stringify(byName.Requirement));
+            const story = s.byStory.find((g) => g.name === 'Invoice calculation');
+            if (!story || story.total !== 2) throw new Error('expected story Invoice calculation to cover 2 requirements, got ' + JSON.stringify(story));
+            const d = require('./allure-dashboard/traceability/data/requirements.json');
+            const req1 = d.requirements.find((r) => r.id === 'REQ-1');
+            if (!req1.groups || req1.groups.story.length !== 3) throw new Error('expected REQ-1 to resolve 3 distinct story values, got ' + JSON.stringify(req1 && req1.groups));
+          "
           echo "Traceability self-test passed."
 
       - uses: actions/upload-pages-artifact@v3

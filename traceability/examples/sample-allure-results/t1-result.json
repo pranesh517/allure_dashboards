@@ -10,6 +10,9 @@
     { "name": "requirement", "value": "REQ-1" },
     { "name": "testcase", "value": "TC-100" },
     { "name": "severity", "value": "critical" },
-    { "name": "suite", "value": "Auth Tests" }
+    { "name": "suite", "value": "Auth Tests" },
+    { "name": "epic", "value": "Accounts" },
+    { "name": "feature", "value": "Login" },
+    { "name": "story", "value": "Password login" }
   ]
 }

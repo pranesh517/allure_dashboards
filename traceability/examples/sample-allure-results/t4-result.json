@@ -10,6 +10,9 @@
     { "name": "requirement", "value": "REQ-1" },
     { "name": "requirement", "value": "REQ-4" },
     { "name": "severity", "value": "critical" },
-    { "name": "suite", "value": "Billing Tests" }
+    { "name": "suite", "value": "Billing Tests" },
+    { "name": "epic", "value": "Billing" },
+    { "name": "feature", "value": "Invoicing" },
+    { "name": "story", "value": "Invoice calculation" }
   ]
 }

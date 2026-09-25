@@ -9,7 +9,10 @@
   "labels": [
     { "name": "requirement", "value": "req-2" },
     { "name": "severity", "value": "normal" },
-    { "name": "suite", "value": "Auth Tests" }
+    { "name": "suite", "value": "Auth Tests" },
+    { "name": "epic", "value": "Accounts" },
+    { "name": "feature", "value": "Login" },
+    { "name": "story", "value": "Logout" }
   ],
   "statusDetails": {
     "message": "expected session cookie to be cleared",

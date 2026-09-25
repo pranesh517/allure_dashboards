@@ -148,6 +148,16 @@ export function computeOrphanTests(tests) {
   return { tests: ranked, count: orphans.length, rate: pct(orphans.length, tests.length) };
 }
 
+// How many of ALL tests (traced or not) carry at least one value for a given
+// plain Allure label — epic/feature/story are always labels, never links, so
+// this is a simpler, more direct question than "is this test covered by a
+// requirement": it's "did anyone bother to tag this test at all", regardless
+// of whether that tag maps to anything in a requirements-file.
+export function countTestsWithLabel(tests, labelName) {
+  const count = tests.filter((t) => (t.labels?.[labelName] || []).length > 0).length;
+  return { count, rate: pct(count, tests.length) };
+}
+
 // Every ignored-by-pattern value across all tests, deduped, so the Gaps tab
 // can list "these annotation values looked like ids but didn't match your
 // pattern" instead of the viewer having to guess why a test seems untraced.
@@ -165,22 +175,32 @@ export function collectIgnoredValues(tests) {
   return out;
 }
 
-// Coverage per value of a grouping label (epic or feature). A requirement's
-// group comes from the requirements-file column of that name if the file
-// supplied it; otherwise from the union of that label's values across the
-// requirement's own linked tests (so grouping still works with no file). A
-// requirement that resolves to several group values (disagreeing tests, or a
-// multi-value label) is counted in each one, same as the dashboard's grouped
-// view; one with none lands in "Unassigned".
+// Which value(s) of `groupLabel` (epic/feature/story/...) a requirement
+// belongs to: the requirements-file column of that name if the file
+// supplied it; otherwise the union of that label's values across the
+// requirement's own covering tests (so grouping still works with no file,
+// or for a label — like story — the file never has a column for). Returns
+// [] when nothing resolves; callers that need an "Unassigned" bucket add it
+// themselves. Exported (not just used by coverageByGroup below) because the
+// static report needs the same per-requirement values client-side, to
+// filter the Matrix tab when a "Coverage by" bar is clicked — sending it
+// once here is what lets that filter work for a label with no file column,
+// same as one with a file column.
+export function resolveGroupValues(req, groupLabel) {
+  if (req[groupLabel]) return [req[groupLabel]];
+  const fromTests = new Set();
+  for (const t of req.tests) for (const v of t.labels?.[groupLabel] || []) fromTests.add(v);
+  return [...fromTests];
+}
+
+// Coverage per value of a grouping label (epic, feature, story, ...). A
+// requirement that resolves to several group values (disagreeing tests, or
+// a multi-value label) is counted in each one, same as the dashboard's
+// grouped view; one with none lands in "Unassigned".
 export function coverageByGroup(requirements, groupLabel) {
   const byGroup = new Map();
   for (const req of requirements) {
-    let values = req[groupLabel] ? [req[groupLabel]] : [];
-    if (!values.length) {
-      const fromTests = new Set();
-      for (const t of req.tests) for (const v of t.labels?.[groupLabel] || []) fromTests.add(v);
-      values = [...fromTests];
-    }
+    let values = resolveGroupValues(req, groupLabel);
     if (!values.length) values = ['Unassigned'];
     for (const name of values) {
       if (!byGroup.has(name)) byGroup.set(name, { name, requirements: [] });

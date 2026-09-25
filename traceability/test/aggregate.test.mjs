@@ -11,6 +11,8 @@ import {
   computeOrphanTests,
   collectIgnoredValues,
   coverageByGroup,
+  countTestsWithLabel,
+  resolveGroupValues,
 } from '../src/aggregate.mjs';
 
 const CFG = { requirement: { annotation: 'requirement', source: 'auto', pattern: null }, testcase: { annotation: null } };
@@ -30,6 +32,7 @@ function t(overrides) {
         ...(overrides.severity ? [{ name: 'severity', value: overrides.severity }] : []),
         ...(overrides.epic ? [{ name: 'epic', value: overrides.epic }] : []),
         ...(overrides.feature ? [{ name: 'feature', value: overrides.feature }] : []),
+        ...(overrides.story ? [{ name: 'story', value: overrides.story }] : []),
       ],
       links: [],
     },
@@ -177,4 +180,46 @@ test('coverageByGroup: falls back to the union of covering tests\' label values 
   const byEpic = coverageByGroup(requirements, 'epic');
   assert.equal(byEpic.length, 1);
   assert.equal(byEpic[0].name, 'Checkout');
+});
+
+test('coverageByGroup: works for "story" the same as epic/feature, via the generic label fallback', () => {
+  const t1 = t({ uuid: 'a', requirements: ['REQ-1'], story: 'Password login' });
+  const requirements = [{ id: 'REQ-1', epic: null, feature: null, tests: [t1], status: 'passing' }];
+  const byStory = coverageByGroup(requirements, 'story');
+  assert.equal(byStory.length, 1);
+  assert.equal(byStory[0].name, 'Password login');
+});
+
+test('countTestsWithLabel: counts tests carrying at least one value for a plain label, independent of requirement linkage', () => {
+  const tests = [
+    t({ uuid: 'a', epic: 'Accounts' }),
+    t({ uuid: 'b', epic: 'Accounts', requirements: ['REQ-1'] }),
+    t({ uuid: 'c' }), // no epic
+  ];
+  const r = countTestsWithLabel(tests, 'epic');
+  assert.deepEqual(r, { count: 2, rate: 66.7 });
+});
+
+test('countTestsWithLabel: zero tests carrying the label gives 0%, not NaN', () => {
+  const tests = [t({ uuid: 'a' }), t({ uuid: 'b' })];
+  assert.deepEqual(countTestsWithLabel(tests, 'story'), { count: 0, rate: 0 });
+});
+
+test('resolveGroupValues: requirements-file column wins over the tests\' own label', () => {
+  const t1 = t({ uuid: 'a', epic: 'Checkout' });
+  const req = { epic: 'Billing', tests: [t1] };
+  assert.deepEqual(resolveGroupValues(req, 'epic'), ['Billing']);
+});
+
+test('resolveGroupValues: falls back to the union of covering tests\' label values with no file column', () => {
+  const t1 = t({ uuid: 'a', story: 'Password login' });
+  const t2 = t({ uuid: 'b', story: 'SSO login' });
+  const t3 = t({ uuid: 'c', story: 'Password login' }); // duplicate value, not double-counted
+  const req = { story: null, tests: [t1, t2, t3] };
+  assert.deepEqual(resolveGroupValues(req, 'story').sort(), ['Password login', 'SSO login']);
+});
+
+test('resolveGroupValues: no file column and no test carries the label -> empty array, not ["Unassigned"]', () => {
+  const req = { story: null, tests: [t({ uuid: 'a' })] };
+  assert.deepEqual(resolveGroupValues(req, 'story'), []);
 });

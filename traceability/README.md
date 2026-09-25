@@ -125,6 +125,38 @@ one row for each not-covered requirement (blank test columns) and each
 orphan test (blank requirement columns) — every requirement and every test
 appears at least once, not just the pairs that exist.
 
+## Epic / feature / story vs. requirement coverage
+
+If your tests carry Allure's own `@Epic`/`@Feature`/`@Story` labels (most
+adapters' equivalent of TestNG's `@Epic`, pytest's `@allure.epic`, etc.), the
+report gives you two different, complementary views of them — worth telling
+apart, since they answer different questions:
+
+- **"Test annotation coverage"** (top of the page): *how many tests are
+  tagged at all*, independent of whether that tag maps to anything in a
+  requirements-file. For each of Epic, Feature, Story, and whatever
+  `requirement-annotation` is configured to, it's a straight count — X of Y
+  tests carry that annotation. A low number here means tests aren't being
+  tagged, not that requirements are uncovered; it's a different problem from
+  everything else on the page. The requirement row is measured the same way
+  the rest of the report measures requirement tracing (respecting
+  `requirement-source`/`requirement-id-pattern`), the epic/feature/story rows
+  are always read as plain Allure labels (there's no `epic-source` input —
+  Allure itself defines them as labels, never links).
+- **"Coverage by"** (Epic / Feature / Story tabs, below it): the *existing*
+  requirement-coverage numbers (same `not-covered`/`failing`/`passing`
+  definitions as everywhere else on the page), just grouped by epic, feature,
+  or story instead of listed flat. A requirement's group comes from that
+  column in `requirements-file` if you gave one with that column; otherwise
+  from the union of that label's values across the requirement's own
+  covering tests. Click a bar to filter the Matrix tab to it.
+
+So "Story: 6 of 8 tests (75%)" in the first card and the five story buckets
+in the second are counting different things — one is about test tagging
+hygiene, the other is requirement coverage sliced by story. Both are in
+`data/summary.json` (`annotationCoverage`, `byEpic`, `byFeature`, `byStory`)
+if you want to consume them directly instead of via the page.
+
 ## Inputs
 
 | Input | Required | Default | Meaning |
