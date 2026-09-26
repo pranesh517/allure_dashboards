@@ -14,5 +14,17 @@
     { "name": "epic", "value": "Accounts" },
     { "name": "feature", "value": "Login" },
     { "name": "story", "value": "Password login" }
+  ],
+  "steps": [
+    { "name": "open the login page", "status": "passed", "start": 1732000000000, "stop": 1732000000120 },
+    {
+      "name": "sign in with a valid password", "status": "passed", "start": 1732000000120, "stop": 1732000000480,
+      "steps": [
+        { "name": "type username", "status": "passed", "start": 1732000000130, "stop": 1732000000200 },
+        { "name": "type password", "status": "passed", "start": 1732000000200, "stop": 1732000000260 },
+        { "name": "click Sign in", "status": "passed", "start": 1732000000260, "stop": 1732000000470 }
+      ]
+    },
+    { "name": "assert the account home page is shown", "status": "passed", "start": 1732000000480, "stop": 1732000000610 }
   ]
 }

@@ -125,6 +125,21 @@ export function collectLabels(labels) {
   return Object.fromEntries(byName);
 }
 
+// Allure's nested `steps` tree, trimmed to what the traceability view
+// shows: name, duration and child steps. Status, failure messages,
+// attachments and parameters belong to the dashboard, not here, and are left
+// out to keep tests.json small.
+export function normalizeSteps(steps) {
+  return (steps || []).filter((s) => s && typeof s === 'object').map((s) => {
+    const start = s.start || 0;
+    const stop = s.stop || start;
+    const step = { name: s.name ? String(s.name) : 'unnamed step', durationMs: Math.max(0, stop - start) };
+    const children = normalizeSteps(s.steps);
+    if (children.length) step.steps = children;
+    return step;
+  });
+}
+
 // `config` is `{ requirement: {annotation, source, pattern}, testcase: {...} }`
 // with `pattern` already compiled to a RegExp (or null) by the caller, so a
 // bad regex fails fast at startup instead of once per test.
@@ -159,5 +174,6 @@ export function normalizeTest(raw, config) {
     ignoredRequirementValues: req.ignored,
     testCaseId: tc.id,
     hasExplicitTestCaseId: tc.explicit,
+    steps: normalizeSteps(raw.steps),
   };
 }
