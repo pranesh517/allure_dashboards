@@ -80,6 +80,21 @@ That environment's default protection rules only allow deployments from the
 repository's default branch, so run the deploy on pushes to that branch (as the
 examples do) rather than on pull requests.
 
+> [!WARNING]
+> **Everything in the report is published to whoever can reach the Pages URL.**
+> On a public repository that's everyone. On a private repository, GitHub
+> Pages sites are still public on the Free, Pro and Team plans; only GitHub
+> Enterprise Cloud can restrict a Pages site to people with repository
+> access. The dashboard publishes test names, error messages and stack
+> traces, step names (with their parameter values, e.g. `@allure.step("Enter
+> password: {password}")` puts the password on the page), and every
+> screenshot, page source and log attached to a result. If your tests touch
+> real customer data, credentials, internal URLs or anything else you
+> wouldn't post publicly, either keep it out of the Allure results (mask
+> step parameters, don't attach it) or don't deploy to Pages: upload
+> `allure-dashboard/` with `actions/upload-artifact` instead and open it
+> locally.
+
 If you're moving off an existing `gh-pages` setup: switch the Pages source to
 GitHub Actions as above, add the two deploy steps and the permissions from this
 section, and then delete the old `gh-pages` branch and any workflow step that
