@@ -10,6 +10,8 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
+import { buildJobSummary } from './job-summary.mjs';
+
 const STATUSES = ['passed', 'failed', 'broken', 'skipped', 'unknown'];
 const SEVERITY_ORDER = ['blocker', 'critical', 'normal', 'minor', 'trivial'];
 
@@ -293,6 +295,8 @@ async function main() {
   const maxHistory = parseInt(args['max-history'] || '100', 10);
   const title = args.title || 'Allure Dashboard';
   const traceabilityUrl = args['traceability-url'] || null;
+  const dashboardUrl = args['dashboard-url'] || null;
+  const jobSummary = (args['job-summary'] || 'true').toLowerCase() !== 'false';
   const siteTemplate = args['site-template'];
 
   if (!resultsDir || !(await pathExists(resultsDir))) {
@@ -516,6 +520,21 @@ async function main() {
     await fs.appendFile(process.env.GITHUB_OUTPUT, outputLines.join('\n') + '\n');
   } else {
     console.log(outputLines.join('\n'));
+  }
+
+  // ---- job summary ------------------------------------------------------
+  // The previous run to diff against is the newest history entry that isn't
+  // this run (a re-run of the same workflow run reuses its run id), read
+  // from the per-run snapshot carried in via history-path.
+  if (jobSummary && process.env.GITHUB_STEP_SUMMARY) {
+    const prevEntry = priorHistory.find((r) => sanitizeId(r.runId) !== currentId);
+    const previous = prevEntry && historyDir
+      ? await readJsonSafe(path.join(historyDir, 'runs', `${sanitizeId(prevEntry.runId)}.json`), null)
+      : null;
+    await fs.appendFile(
+      process.env.GITHUB_STEP_SUMMARY,
+      buildJobSummary({ current: latest, previous: previous && Array.isArray(previous.tests) ? previous : null, dashboardUrl }),
+    );
   }
 
   console.log(`Allure dashboard written to ${outputDir} (${total} tests, ${passRate}% pass rate, ${flakyTests.length} flaky).`);

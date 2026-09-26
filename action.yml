@@ -37,6 +37,14 @@ inputs:
     description: 'Base URL of an Allure Traceability Matrix site (pranesh517/allure_dashboards/traceability) generated from the same run. When set, shows a "Traceability" link in the dashboard header. Purely a link — leave empty if you are not using that action.'
     required: false
     default: ''
+  job-summary:
+    description: 'Write a summary of this run to the job summary page: pass rate and its change since the previous run in history, plus new failures, newly flaky and fixed tests (the comparison needs history-path). Set to "false" to turn it off.'
+    required: false
+    default: 'true'
+  dashboard-url:
+    description: 'Public URL of this dashboard (e.g. your GitHub Pages URL). When set, the job summary links to the dashboard and each listed test links to its row. Leave empty for a summary without links.'
+    required: false
+    default: ''
 
 outputs:
   total:
@@ -85,4 +93,6 @@ runs:
           --max-history "${{ inputs.max-history }}" \
           --title "${{ inputs.dashboard-title }}" \
           --traceability-url "${{ inputs.traceability-url }}" \
+          --job-summary "${{ inputs.job-summary }}" \
+          --dashboard-url "${{ inputs.dashboard-url }}" \
           --site-template "${{ github.action_path }}/site-template"

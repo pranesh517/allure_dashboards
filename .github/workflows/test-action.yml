@@ -29,6 +29,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Unit tests
+        run: |
+          node --test test/*.test.mjs
+          (cd traceability && npm test)
+
       - name: Run action against fixture run #1
         id: run1
         uses: ./
@@ -63,6 +72,7 @@ jobs:
           run-label: 'Demo Build #2'
           dashboard-title: 'Allure Dashboard — Live Demo'
           traceability-url: ${{ steps.pages-url.outputs.url }}traceability/
+          dashboard-url: ${{ steps.pages-url.outputs.url }}
 
       - name: Assert outputs are correct
         run: |
