@@ -206,6 +206,35 @@ flakiness too. If you see more tests flagged than expected, check whether
 equivalent) — leftover files from a previous local run count as extra
 observations.
 
+### Job summary
+
+Every run also writes a summary to the workflow run's **Summary** page
+(`$GITHUB_STEP_SUMMARY`), so the answer to "what did this change break?" is on
+the run itself, before anyone opens the dashboard:
+
+> ❌ **62.5% pass rate** (±0 pts vs Demo Build #1) · 8 tests · 5 passed · 2 failed · 0 broken · 1 skipped · 2 flaky · 9.5s
+>
+> **1** new failure · **2** newly flaky · **1** fixed · **1** still failing
+
+followed by tables of the new failures (with the first line of each error),
+newly flaky tests, and fixed tests, 10 rows each. "New", "newly" and "fixed"
+are relative to the **previous run in history**, keyed by `historyId`:
+
+- **New failure**: failed/broken now, not failing last run (including a test
+  that didn't exist last run).
+- **Newly flaky**: flagged flaky this run (see above) but not last run.
+- **Fixed**: passed now, failed/broken last run.
+
+So the comparison needs `history-path`; without it the summary shows this
+run's numbers and says there's nothing to compare against. What "previous"
+means is whatever history you restore: the cache key in the examples is per
+branch, so on a PR branch it's that branch's previous run, not `main`'s.
+
+Set `dashboard-url` to your Pages URL to link the summary to the dashboard
+and each listed test to its own row. Set `job-summary: false` to turn it off.
+The summary shows test names and error messages, so it's visible to anyone
+who can see the workflow run — on a public repository, everyone.
+
 ### Test steps and screenshots
 
 Click any row in the "All tests" table to expand it. If your Allure adapter
@@ -294,6 +323,8 @@ for the complete two-action workflow.
 | `max-history` | no | `100` | Max runs kept in trend history. |
 | `dashboard-title` | no | `Allure Dashboard` | Title shown on the dashboard. |
 | `traceability-url` | no | *(none)* | Base URL of an [Allure Traceability Matrix](traceability/README.md) site generated from the same run. When set, shows a "↗ Traceability" link in the dashboard header. Leave empty if you're not using that action — nothing else changes. |
+| `job-summary` | no | `true` | Write this run's summary (pass rate and its change since the previous run, new failures, newly flaky and fixed tests) to the job summary. See [Job summary](#job-summary). |
+| `dashboard-url` | no | *(none)* | Public URL of this dashboard, e.g. your Pages URL. When set, the job summary links to the dashboard and to each listed test's row. |
 
 ## Outputs
 
@@ -317,7 +348,12 @@ node src/process.mjs \
   --run-id local-1 --run-label "Local run"
 
 npx serve /tmp/dash-out   # or: python3 -m http.server -d /tmp/dash-out
+
+node --test test/*.test.mjs   # unit tests (the job summary)
 ```
+
+Set `GITHUB_STEP_SUMMARY=/tmp/summary.md` before `node src/process.mjs` to see
+the job summary it would write.
 
 `.github/workflows/test-action.yml` runs the action against the bundled two-run
 fixture (`examples/sample-allure-results/`) on every push and PR, asserts the
