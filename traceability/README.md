@@ -125,6 +125,26 @@ one row for each not-covered requirement (blank test columns) and each
 orphan test (blank requirement columns) — every requirement and every test
 appears at least once, not just the pairs that exist.
 
+## Test steps in the Matrix
+
+Click a requirement row in the Matrix tab to see the tests that cover it:
+**Automated test location** (the test's `testcase-annotation` id, or its
+`fullName` — e.g. `tests.test_login.TestLogin#test_login_with_invalid_credentials`
+— tagged `fullName` when no test case id is configured or found), **Test
+name** (the Allure title, e.g. `@allure.title("Verify invalid login")`), and
+duration. Pass/fail status is left to the requirement row and to the Allure
+Dashboard; this view is about *what* traces to *what*.
+
+Any test that recorded Allure steps gets a ▸ of its own — click it to see
+the step tree, nested the way the steps were nested when they ran, with
+each step's duration. That's `@allure.step` / `with allure.step(...)` in
+allure-pytest, `Allure.step()` / `@Step` in TestNG/JUnit, `allure.step` or
+command logging in Cypress/Playwright. Tests with no steps simply have no ▸.
+Only step names and durations are carried over — step status, failure
+messages and attachments stay in the dashboard. Steps are written once per
+test to `data/tests.json` (not repeated per requirement in
+`data/requirements.json`).
+
 ## Epic / feature / story vs. requirement coverage
 
 If your tests carry Allure's own `@Epic`/`@Feature`/`@Story` labels (most
@@ -199,7 +219,7 @@ rows, independent of whatever the requirement id turns out to be.
 | `requirement-annotation` | yes | | The label name / link type that holds a requirement id. |
 | `requirement-source` | no | `auto` | `auto`, `label`, `link`, or `tag`. |
 | `requirement-id-pattern` | no | *(none)* | Regex to extract/validate requirement ids. With `tag` source, this is what selects which tags are requirement ids. |
-| `testcase-annotation` | no | *(none)* | The label name / link type that holds a test case id. Falls back to the test's `fullName` when unset or missing on a given test. |
+| `testcase-annotation` | no | *(none)* | The label name / link type that holds a test case id. Falls back to the test's `fullName` when unset or missing on a given test. Shown as the "Automated test location" column. |
 | `testcase-source` | no | `auto` | Same values as `requirement-source`. |
 | `testcase-id-pattern` | no | *(none)* | Same idea as `requirement-id-pattern`, for test case ids. |
 | `requirements-file` | no | *(none)* | CSV or JSON master list of requirements. Columns/keys: `id` (required), `title`, `epic`, `feature`, `priority` (all optional, case-insensitive). Without this, coverage is measured against ids found in results, and nothing can be "not covered". |
