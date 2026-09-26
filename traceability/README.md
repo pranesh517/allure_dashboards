@@ -47,6 +47,17 @@ add `requirements-file: requirements.csv`. See a complete workflow:
 - [examples/annotations-pytest.md](examples/annotations-pytest.md), [-testng.md](examples/annotations-testng.md), [-cypress-playwright.md](examples/annotations-cypress-playwright.md) — how to record requirement/test-case ids in each framework
 - [examples/requirements.csv](examples/requirements.csv) + [examples/sample-allure-results/](examples/sample-allure-results/) — the fixture this action's own tests run against
 
+> [!WARNING]
+> **Everything in the report is published to whoever can reach the Pages URL.**
+> On a public repository that's everyone; on a private one, Pages sites are
+> still public unless you're on GitHub Enterprise Cloud with private Pages.
+> The matrix publishes requirement ids and titles (plus epic, feature and
+> priority from `requirements-file`), test names, labels, and step names with their
+> parameter values (`@allure.step("Enter password: {password}")` puts the
+> password on the page). See the dashboard README's
+> [Deploying](../README.md#deploying-github-actions-not-a-branch) section for
+> what to do if that's a problem.
+
 Permissions your job needs for the Pages deploy (same as the dashboard action):
 
 ```yaml
