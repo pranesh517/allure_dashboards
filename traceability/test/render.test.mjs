@@ -54,6 +54,14 @@ test('buildOrphanTestsData and buildTestsData shape their rows', () => {
   const rows = buildTestsData([orphan, traced], null);
   assert.deepEqual(rows[0].requirementIds, []);
   assert.deepEqual(rows[1].requirementIds, ['REQ-1']);
+  assert.deepEqual(rows[1].steps, []);
+});
+
+test('steps ride in tests.json only, not in requirements.json\'s nested test summaries', () => {
+  const traced = { ...t({ uuid: 'b', requirements: ['REQ-1'] }), steps: [{ name: 's', durationMs: 1 }] };
+  assert.deepEqual(buildTestsData([traced], null)[0].steps, traced.steps);
+  const requirements = [{ id: 'REQ-1', key: 'REQ-1', title: null, epic: null, feature: null, priority: null, status: 'passing', tests: [traced] }];
+  assert.equal(buildRequirementsData(requirements, null)[0].tests[0].steps, undefined);
 });
 
 test('buildSummary counts retried tests (group size > 1) without exposing the raw Map', () => {

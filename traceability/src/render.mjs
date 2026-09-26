@@ -68,9 +68,12 @@ export function buildOrphanTestsData(orphanTests, dashboardUrl) {
   return orphanTests.map((t) => testSummary(t, dashboardUrl));
 }
 
-// Every test, traced or not — the "Tests" reverse view.
+// Every test, traced or not — the "Tests" reverse view. Steps ride only
+// here (not in requirements.json's nested summaries) so a test covering
+// several requirements doesn't repeat its step tree once per requirement;
+// the Matrix tab looks them up by uuid.
 export function buildTestsData(tests, dashboardUrl) {
-  return tests.map((t) => ({ ...testSummary(t, dashboardUrl), requirementIds: t.requirementIds }));
+  return tests.map((t) => ({ ...testSummary(t, dashboardUrl), requirementIds: t.requirementIds, steps: t.steps || [] }));
 }
 
 export function buildSummary({

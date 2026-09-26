@@ -261,6 +261,44 @@ function groupDisplay(r, label) {
   return values && values.length ? values.join(', ') : null;
 }
 
+// Steps live in tests.json only (see render.mjs buildTestsData), keyed here
+// by uuid so the Matrix tab's nested test summaries can find them.
+const stepsByUuid = new Map();
+
+function stepList(steps) {
+  return `<ul class="step-list">${steps.map((s) => `
+    <li>
+      <div class="step"><span class="step-dot"></span><span class="step-name">${escapeHtml(s.name)}</span><span class="step-dur">${formatDuration(s.durationMs)}</span></div>
+      ${s.steps && s.steps.length ? stepList(s.steps) : ''}
+    </li>`).join('')}</ul>`;
+}
+
+function requirementTestRows(t) {
+  const steps = stepsByUuid.get(t.uuid) || [];
+  const row = el(`
+    <tr class="${steps.length ? 'row-clickable' : ''}">
+      <td><code>${escapeHtml(t.testCaseId)}</code>${!t.hasExplicitTestCaseId ? ' <span class="tag">fullName</span>' : ''}</td>
+      <td>${escapeHtml(t.name)}${dashboardLink(t.dashboardUrl)}</td>
+      <td class="num">${formatDuration(t.durationMs)}</td>
+      <td class="num">${steps.length ? '▸' : ''}</td>
+    </tr>`);
+  if (!steps.length) {
+    row.title = 'No steps recorded for this test';
+    return [row];
+  }
+  const detail = el('<tr class="detail-row"><td colspan="4"><div class="inner steps-inner"></div></td></tr>');
+  row.addEventListener('click', (e) => {
+    if (e.target.closest('a')) return;
+    if (!detail.dataset.ready) {
+      detail.querySelector('.inner').innerHTML = stepList(steps);
+      detail.dataset.ready = '1';
+    }
+    detail.classList.toggle('open');
+    row.classList.toggle('expanded');
+  });
+  return [row, detail];
+}
+
 function requirementRow(r) {
   const epic = groupDisplay(r, 'epic');
   const feature = groupDisplay(r, 'feature');
@@ -278,15 +316,13 @@ function requirementRow(r) {
     const detail = el('<tr class="detail-row"><td colspan="7"><div class="inner"></div></td></tr>');
     row.addEventListener('click', () => {
       if (!detail.dataset.ready) {
-        detail.querySelector('.inner').innerHTML = `
-          <table><thead><tr><th>Test case</th><th>Name</th><th>Status</th><th>Duration</th></tr></thead>
-          <tbody>${r.tests.map((t) => `
-            <tr>
-              <td><code>${escapeHtml(t.testCaseId)}</code>${!t.hasExplicitTestCaseId ? ' <span class="tag">fullName</span>' : ''}</td>
-              <td>${escapeHtml(t.name)}${dashboardLink(t.dashboardUrl)}</td>
-              <td>${chip(t.status, TEST_STATUS_META)}</td>
-              <td class="num">${formatDuration(t.durationMs)}</td>
-            </tr>`).join('')}</tbody></table>`;
+        const table = el(`
+          <table><thead><tr><th>Automated test location</th><th>Test name</th><th>Duration</th><th></th></tr></thead>
+          <tbody></tbody></table>`);
+        detail.querySelector('.inner').appendChild(table);
+        for (const t of r.tests) {
+          for (const el2 of requirementTestRows(t)) table.tBodies[0].appendChild(el2);
+        }
         detail.dataset.ready = '1';
       }
       detail.classList.toggle('open');
@@ -487,6 +523,7 @@ async function main() {
   drawMatrix();
 
   testsView.tests = testsData.tests;
+  for (const t of testsData.tests) if (t.steps && t.steps.length) stepsByUuid.set(t.uuid, t.steps);
   drawTests();
 
   orphansView.tests = testsData.orphanTests;

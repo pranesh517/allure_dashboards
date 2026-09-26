@@ -8,6 +8,7 @@ import {
   extractTestCaseId,
   collectLabels,
   normalizeTest,
+  normalizeSteps,
 } from '../src/extract.mjs';
 
 test('labelValues matches label name case-insensitively and skips empty values', () => {
@@ -157,4 +158,28 @@ test('normalizeTest defaults an invalid/missing status to "unknown"', () => {
   const raw = { uuid: 'u', historyId: 'h', name: 'n', fullName: 'n', status: 'weird', labels: [], links: [] };
   const config = { requirement: { annotation: null }, testcase: { annotation: null } };
   assert.equal(normalizeTest(raw, config).status, 'unknown');
+});
+
+test('normalizeSteps keeps the nested tree with names and durations only', () => {
+  const steps = normalizeSteps([
+    { name: 'open login page', status: 'passed', start: 100, stop: 150 },
+    {
+      name: 'submit credentials',
+      status: 'failed',
+      start: 150,
+      stop: 400,
+      statusDetails: { message: 'Expected error banner' },
+      steps: [{ name: 'type password', status: 'passed', start: 160, stop: 170, attachments: [{ name: 'x.png' }] }],
+    },
+    null,
+  ]);
+  assert.deepEqual(steps, [
+    { name: 'open login page', durationMs: 50 },
+    { name: 'submit credentials', durationMs: 250, steps: [{ name: 'type password', durationMs: 10 }] },
+  ]);
+});
+
+test('normalizeTest: a result with no steps gets an empty array', () => {
+  const cfg = { requirement: { annotation: 'requirement', source: 'auto', pattern: null }, testcase: { annotation: null } };
+  assert.deepEqual(normalizeTest({ uuid: 'u', name: 'n' }, cfg).steps, []);
 });
