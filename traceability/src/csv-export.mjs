@@ -1,8 +1,12 @@
 // Builds the `traceability.csv` audit export. Pure string-building, no fs.
 
+// Test names and requirement titles are untrusted, and this file gets opened
+// in Excel / Sheets: a text cell starting with = + - @ (or a tab / CR) would
+// run as a formula there, so it's prefixed with ' to keep it plain text.
 function csvField(v) {
   if (v == null) return '';
-  const s = String(v);
+  let s = String(v);
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
