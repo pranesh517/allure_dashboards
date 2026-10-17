@@ -8,7 +8,7 @@
 | **Version assessed** | `v2.3.0` (commit `3d2ba0709e1c9b97d1d84ef5108adf82616021e0`) |
 | **Components** | Allure Dashboard action (`action.yml`, `src/`, `site-template/`); Allure Traceability Matrix action (`traceability/`); the repository's own CI workflow |
 | **Assessed by** | The maintainer, with AI-assisted code review (Claude Code). This is not an independent third-party audit. |
-| **Fixed in** | Commits `41df1ce` and `a1bcd6b` (branch `fix/security-hardening`), first shipped in the release after `v2.3.0` |
+| **Fixed in** | Branch `fix/security-hardening` (commits listed per finding), first shipped in the release after `v2.3.0` |
 
 ---
 
@@ -20,6 +20,8 @@
 
 - don't pass values from GitHub event data (branch names, PR titles, commit messages) to any of the action's inputs (SA-03), and
 - only run the action on results from code you trust, especially if your Pages site is public (SA-01, SA-02, SA-04).
+
+**If you carry history between runs:** HTML and SVG attachments saved in your history by an older version are carried forward unchanged after you upgrade, and stay live until those runs leave the `max-history` window (see SA-04). To remove them immediately, delete `*.html`, `*.htm`, `*.svg` and `*.xml` files under `attachments/` in your saved history, or start a fresh history.
 
 **Who is at risk:** every finding needs an attacker who can influence either the test results the action reads (test names, labels, error messages, attachment metadata, `categories.json`) or the inputs a workflow passes to the action. In practice, that means someone who can get code or data into your test run: a contributor, a compromised test dependency, or the application under test, whose responses end up in error messages and page-source attachments. None of the findings can be exploited by a visitor who only views your dashboard.
 
@@ -77,14 +79,14 @@
 | SA-01 | Path traversal in attachment copying publishes arbitrary runner files | High | Dashboard | Fixed |
 | SA-02 | Stored cross-site scripting in the dashboard frontend | Medium | Dashboard | Fixed |
 | SA-03 | Expression injection in the composite actions' run steps | Medium | Both | Fixed |
-| SA-04 | HTML/SVG attachments execute in the dashboard's origin | Medium | Dashboard | Fixed |
+| SA-04 | HTML/SVG attachments execute in the dashboard's origin | Medium | Dashboard | Fixed (new attachments; see note) |
 | SA-05 | Spreadsheet formula injection in `traceability.csv` | Low | Traceability | Fixed |
 | SA-06 | Repository CI grants Pages-deploy permissions to pull-request runs | Low | Repository CI | Fixed |
 | SA-07 | Report footer leaks users' site URLs via Referer | Low | Both | Fixed |
 | SA-08 | Regular expressions from configuration have no time limit | Low | Both | Accepted (documented) |
 | SA-09 | Content of `history-path` is republished without validation | Low | Dashboard | Accepted (documented) |
-| SA-10 | Nested `actions/setup-node` is referenced by tag, not commit SHA | Low | Both | Open |
-| SA-11 | Newline in `output-path` can inject extra step outputs | Low | Both | Accepted |
+| SA-10 | Nested `actions/setup-node` is referenced by tag, not commit SHA | Low | Both | Fixed |
+| SA-11 | Newline in `output-path` can inject extra step outputs | Low | Both | Fixed |
 | SA-12 | Using any third-party action means trusting its code | Info | Platform | Documented |
 
 ---
@@ -163,6 +165,8 @@
 
 **Fix.** Attachments with an HTML, XHTML, SVG, XML, XSL or MHTML extension or MIME type are published with an extra `.txt` extension and the type `text/plain`, so browsers display them as text. As a result, SVG screenshots appear as file links rather than thumbnails. Covered by `test/security.test.mjs`.
 
+**Residual risk.** The fix applies to attachments as they are first published. Attachments carried forward from `history-path` (see SA-09) are copied as they were saved, so HTML and SVG files that an older version saved into a user's history stay live until those runs leave the `max-history` window (100 runs by default). Rewriting saved history was left out on purpose, because changing files and links in existing history risks breaking browsing of previous runs. Users can remove such files themselves (see section 1).
+
 ---
 
 ### SA-05: Spreadsheet formula injection in `traceability.csv`
@@ -235,7 +239,7 @@
 | **Location** | `src/process.mjs`, carrying `runs/` and `attachments/` forward from `history-path` |
 | **Status** | Accepted; documented under "Known issues" |
 
-**Description.** Previous run snapshots and attachments found under `history-path` are copied into the new site without validation. Anyone who can write to that cache or release can control part of the published site. **Rationale for accepting:** this data is the action's own earlier output, and GitHub scopes caches by branch, so a pull request from a fork cannot write a cache that `main` restores. Users are told to restore history only from storage their own default-branch workflow wrote.
+**Description.** Previous run snapshots and attachments found under `history-path` are copied into the new site without validation. Anyone who can write to that cache or release can control part of the published site. **Rationale for accepting:** this data is the action's own earlier output, and GitHub scopes caches by branch, so a pull request from a fork cannot write a cache that `main` restores. Users are told to restore history only from storage their own default-branch workflow wrote. This finding also limits the SA-04 fix, as noted there.
 
 ---
 
@@ -246,9 +250,11 @@
 | **Severity** | Low |
 | **CWE** | CWE-829: Inclusion of Functionality from Untrusted Control Sphere |
 | **Location** | `action.yml`, `traceability/action.yml`: `uses: actions/setup-node@v4` |
-| **Status** | Open |
+| **Status** | Fixed in `7c44a97` |
 
-**Description.** Both actions run `actions/setup-node@v4`, and every user inherits that reference. A user who pins this action to a commit SHA (as recommended in section 6) still gets whatever the `v4` tag points to when the job runs. **Planned fix:** pin to a full commit SHA, kept current with Dependabot.
+**Description.** Both actions ran `actions/setup-node@v4`, and every user inherits that reference. A user who pinned this action to a commit SHA (as recommended in section 6) still got whatever the `v4` tag pointed to when the job ran.
+
+**Fix.** Both actions now use `actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020` (`v4.4.0`, the commit `v4` pointed to on the assessment date, so behavior is unchanged). `.github/dependabot.yml` opens a pull request when a newer version is available.
 
 ---
 
@@ -259,9 +265,11 @@
 | **Severity** | Low |
 | **CWE** | CWE-93: Improper Neutralization of CRLF Sequences |
 | **Location** | `site-path=` line written to `$GITHUB_OUTPUT` in both processors |
-| **Status** | Accepted |
+| **Status** | Fixed in `7c44a97` |
 
-**Description.** A newline in the `output-path` input would add extra lines to the step's outputs. **Rationale for accepting:** `output-path` is a directory name set in the workflow file, and the same person controls the workflow anyway. No other output contains text from test data; all other outputs are numbers.
+**Description.** A newline in the `output-path` input would have added extra lines to the step's outputs. `output-path` is set in the workflow file, so the impact was low. No other output contains text from test data; all other outputs are numbers.
+
+**Fix.** Both actions now fail with an error if `output-path` contains a line break, before writing any output. Covered by `test/security.test.mjs`.
 
 ---
 
@@ -286,7 +294,7 @@
 | Can the maintainer see my runs, logs, secrets, metrics or site? | **No.** GitHub gives action authors no access to the workflows that use their action. Like everyone else, the maintainer can see only what you make public: public repositories and public Pages sites. |
 | What does the action publish? | Everything in your Allure results that reaches the report: test names, parameters, step names, error messages, stack traces, labels, links, and every attachment (screenshots, page sources, logs). On GitHub Free, Pro and Team plans, Pages sites are public even for private repositories. Review what your tests record before publishing. |
 | Does it need secrets or write permissions? | **No.** The action itself needs only read access to the workspace. Only the separate Pages deploy step needs `pages: write` and `id-token: write`. |
-| Does it install dependencies at runtime? | **No.** It runs plain Node.js modules shipped in the repository. Its only external reference is `actions/setup-node` (see SA-10). |
+| Does it install dependencies at runtime? | **No.** It runs plain Node.js modules shipped in the repository. Its only external reference is `actions/setup-node`, pinned to a commit SHA (see SA-10). |
 
 ---
 
@@ -372,4 +380,4 @@ Please report security issues privately through GitHub's **private vulnerability
 
 | Revision | Date | Change |
 |---|---|---|
-| 1.0 | 2026-10-17 | Initial assessment of `v2.3.0`. SA-01 – SA-07 fixed; SA-08, SA-09, SA-11 accepted; SA-10 open; SA-12 documented. |
+| 1.0 | 2026-10-17 | Initial assessment of `v2.3.0`. SA-01 – SA-07, SA-10 and SA-11 fixed (SA-04 with a documented residual risk); SA-08 and SA-09 accepted; SA-12 documented. |

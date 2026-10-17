@@ -381,7 +381,11 @@ simple.
 from the same origin as the dashboard, so a page-source dump or SVG could run
 script with the dashboard's origin if a browser rendered it. They're published
 with a `.txt` extension instead (so an SVG shows as a file link, not a
-thumbnail).
+thumbnail). This applies as attachments are first published: HTML or SVG
+files that an older version saved into your history are carried forward
+unchanged until those runs leave the `max-history` window. To drop them now,
+delete `*.html`, `*.htm`, `*.svg` and `*.xml` under `attachments/` in your
+saved history, or start a fresh history.
 
 ## Local development
 
