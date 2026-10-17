@@ -338,6 +338,55 @@ for the complete two-action workflow.
 Use these to gate the build (`if: steps.dashboard.outputs.pass-rate < 80`) or post
 a summary — see the examples.
 
+## Known issues
+
+The full security assessment, including every finding, the affected
+versions and what was fixed, is in [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md).
+
+**Using any third-party action means trusting its code.** This is how GitHub
+Actions works, not something specific to this action: `uses: owner/action@v1`
+runs whatever that tag points to today inside your job, with the job's
+access — your checked-out code, the token `actions/checkout` saves in
+`.git/config`, any secrets you pass to the step, and what gets published
+after it. If an action's repository is compromised and its tags are moved,
+every workflow using those tags runs the new code (this happened to
+`tj-actions/changed-files` in March 2025). To limit that for this action or
+any other:
+
+- Pin to a full commit SHA instead of a tag:
+  `uses: pranesh517/allure_dashboards@<40-char sha> # v1`. Dependabot can keep
+  SHA pins up to date.
+- Give the job only the `permissions:` it needs. This action needs nothing
+  beyond `contents: read`; only the Pages deploy step needs `pages: write`
+  and `id-token: write`, and it can run as its own job.
+- Don't pass secrets to the step or set them as job-level `env:`. This action
+  needs none.
+- Use `persist-credentials: false` on `actions/checkout` when later steps
+  don't need to push.
+
+This action makes no network calls and sends nothing anywhere: its output
+goes only to your workspace, job summary and Pages site.
+
+**`history-path` is trusted as-is.** Run snapshots and attachments found
+there are carried into the new site without being re-checked, so restore it
+only from a cache or release that your own workflow on your default branch
+wrote — never from something a pull request from a fork could have produced.
+
+**`categories.json` regexes have no time limit.** A pattern with catastrophic
+backtracking (e.g. `(a+)+$`) can make the step hang on a long error message
+or stack trace. The file is your own test configuration; keep its patterns
+simple.
+
+**HTML, SVG and XML attachments open as plain text.** Attachments are served
+from the same origin as the dashboard, so a page-source dump or SVG could run
+script with the dashboard's origin if a browser rendered it. They're published
+with a `.txt` extension instead (so an SVG shows as a file link, not a
+thumbnail). This applies as attachments are first published: HTML or SVG
+files that an older version saved into your history are carried forward
+unchanged until those runs leave the `max-history` window. To drop them now,
+delete `*.html`, `*.htm`, `*.svg` and `*.xml` under `attachments/` in your
+saved history, or start a fresh history.
+
 ## Local development
 
 ```bash

@@ -122,6 +122,9 @@ async function main() {
   const failOnFailing = parseBoolInput(args['fail-on-failing']);
 
   const outputDir = args.output || 'traceability-report';
+  // Echoed into $GITHUB_OUTPUT as `site-path=...`; a line break in it would
+  // let it add outputs of its own.
+  if (/[\r\n]/.test(outputDir)) fail('output-path must not contain line breaks.');
   const title = args.title || 'Traceability Matrix';
   const dashboardUrl = args['dashboard-url'] || null;
 

@@ -76,23 +76,38 @@ runs:
   using: 'composite'
   steps:
     - name: Set up Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: '20'
 
     - name: Generate Allure dashboard
       id: process
       shell: bash
+      # Inputs reach the script only as environment variables, never as
+      # ${{ }} text spliced into it — a value such as a PR title or branch
+      # name passed in as dashboard-title / run-label must not run as shell.
+      env:
+        INPUT_ALLURE_RESULTS_PATH: ${{ inputs.allure-results-path }}
+        INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_HISTORY_PATH: ${{ inputs.history-path }}
+        INPUT_RUN_ID: ${{ inputs.run-id }}
+        INPUT_RUN_LABEL: ${{ inputs.run-label }}
+        INPUT_MAX_HISTORY: ${{ inputs.max-history }}
+        INPUT_DASHBOARD_TITLE: ${{ inputs.dashboard-title }}
+        INPUT_TRACEABILITY_URL: ${{ inputs.traceability-url }}
+        INPUT_JOB_SUMMARY: ${{ inputs.job-summary }}
+        INPUT_DASHBOARD_URL: ${{ inputs.dashboard-url }}
+        ACTION_PATH: ${{ github.action_path }}
       run: |
-        node "${{ github.action_path }}/src/process.mjs" \
-          --results "${{ inputs.allure-results-path }}" \
-          --output "${{ inputs.output-path }}" \
-          --history "${{ inputs.history-path }}" \
-          --run-id "${{ inputs.run-id }}" \
-          --run-label "${{ inputs.run-label }}" \
-          --max-history "${{ inputs.max-history }}" \
-          --title "${{ inputs.dashboard-title }}" \
-          --traceability-url "${{ inputs.traceability-url }}" \
-          --job-summary "${{ inputs.job-summary }}" \
-          --dashboard-url "${{ inputs.dashboard-url }}" \
-          --site-template "${{ github.action_path }}/site-template"
+        node "$ACTION_PATH/src/process.mjs" \
+          --results "$INPUT_ALLURE_RESULTS_PATH" \
+          --output "$INPUT_OUTPUT_PATH" \
+          --history "$INPUT_HISTORY_PATH" \
+          --run-id "$INPUT_RUN_ID" \
+          --run-label "$INPUT_RUN_LABEL" \
+          --max-history "$INPUT_MAX_HISTORY" \
+          --title "$INPUT_DASHBOARD_TITLE" \
+          --traceability-url "$INPUT_TRACEABILITY_URL" \
+          --job-summary "$INPUT_JOB_SUMMARY" \
+          --dashboard-url "$INPUT_DASHBOARD_URL" \
+          --site-template "$ACTION_PATH/site-template"

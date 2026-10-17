@@ -88,27 +88,46 @@ runs:
   using: 'composite'
   steps:
     - name: Set up Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: '20'
 
     - name: Generate traceability matrix
       id: process
       shell: bash
+      # Inputs reach the script only as environment variables, never as
+      # ${{ }} text spliced into it — a value such as a PR title or branch
+      # name passed in as title must not run as shell.
+      env:
+        INPUT_ALLURE_RESULTS_PATH: ${{ inputs.allure-results-path }}
+        INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_REQUIREMENT_ANNOTATION: ${{ inputs.requirement-annotation }}
+        INPUT_REQUIREMENT_SOURCE: ${{ inputs.requirement-source }}
+        INPUT_REQUIREMENT_ID_PATTERN: ${{ inputs.requirement-id-pattern }}
+        INPUT_TESTCASE_ANNOTATION: ${{ inputs.testcase-annotation }}
+        INPUT_TESTCASE_SOURCE: ${{ inputs.testcase-source }}
+        INPUT_TESTCASE_ID_PATTERN: ${{ inputs.testcase-id-pattern }}
+        INPUT_REQUIREMENTS_FILE: ${{ inputs.requirements-file }}
+        INPUT_DASHBOARD_URL: ${{ inputs.dashboard-url }}
+        INPUT_TITLE: ${{ inputs.title }}
+        INPUT_MIN_COVERAGE: ${{ inputs.min-coverage }}
+        INPUT_FAIL_ON_UNCOVERED: ${{ inputs.fail-on-uncovered }}
+        INPUT_FAIL_ON_FAILING: ${{ inputs.fail-on-failing }}
+        ACTION_PATH: ${{ github.action_path }}
       run: |
-        node "${{ github.action_path }}/src/process.mjs" \
-          --results "${{ inputs.allure-results-path }}" \
-          --output "${{ inputs.output-path }}" \
-          --requirement-annotation "${{ inputs.requirement-annotation }}" \
-          --requirement-source "${{ inputs.requirement-source }}" \
-          --requirement-id-pattern "${{ inputs.requirement-id-pattern }}" \
-          --testcase-annotation "${{ inputs.testcase-annotation }}" \
-          --testcase-source "${{ inputs.testcase-source }}" \
-          --testcase-id-pattern "${{ inputs.testcase-id-pattern }}" \
-          --requirements-file "${{ inputs.requirements-file }}" \
-          --dashboard-url "${{ inputs.dashboard-url }}" \
-          --title "${{ inputs.title }}" \
-          --min-coverage "${{ inputs.min-coverage }}" \
-          --fail-on-uncovered "${{ inputs.fail-on-uncovered }}" \
-          --fail-on-failing "${{ inputs.fail-on-failing }}" \
-          --site-template "${{ github.action_path }}/site-template"
+        node "$ACTION_PATH/src/process.mjs" \
+          --results "$INPUT_ALLURE_RESULTS_PATH" \
+          --output "$INPUT_OUTPUT_PATH" \
+          --requirement-annotation "$INPUT_REQUIREMENT_ANNOTATION" \
+          --requirement-source "$INPUT_REQUIREMENT_SOURCE" \
+          --requirement-id-pattern "$INPUT_REQUIREMENT_ID_PATTERN" \
+          --testcase-annotation "$INPUT_TESTCASE_ANNOTATION" \
+          --testcase-source "$INPUT_TESTCASE_SOURCE" \
+          --testcase-id-pattern "$INPUT_TESTCASE_ID_PATTERN" \
+          --requirements-file "$INPUT_REQUIREMENTS_FILE" \
+          --dashboard-url "$INPUT_DASHBOARD_URL" \
+          --title "$INPUT_TITLE" \
+          --min-coverage "$INPUT_MIN_COVERAGE" \
+          --fail-on-uncovered "$INPUT_FAIL_ON_UNCOVERED" \
+          --fail-on-failing "$INPUT_FAIL_ON_FAILING" \
+          --site-template "$ACTION_PATH/site-template"

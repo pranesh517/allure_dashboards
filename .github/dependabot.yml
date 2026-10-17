@@ -1,0 +1,11 @@
+# Keeps the commit-SHA pins on third-party actions current: both actions'
+# own action.yml (their pinned actions/setup-node is inherited by every
+# user) and this repo's workflows. Opens a PR; nothing updates on its own.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      - /
+      - /traceability
+    schedule:
+      interval: weekly

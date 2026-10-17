@@ -250,6 +250,30 @@ rows, independent of whatever the requirement id turns out to be.
 | `orphan-tests` | Count of tests with no requirement id at all. |
 | `site-path` | Path to the generated site — upload this with `actions/upload-pages-artifact`. |
 
+## Known issues
+
+The full security assessment, including every finding, the affected
+versions and what was fixed, is in [SECURITY-ASSESSMENT.md](../SECURITY-ASSESSMENT.md).
+
+**Using any third-party action means trusting its code.** This is how GitHub
+Actions works, not something specific to this action: `uses: owner/action@v2`
+runs whatever that tag points to today inside your job, with the job's access
+(your checked-out code, the token `actions/checkout` saves in `.git/config`,
+any secrets you pass to the step). Pin to a full commit SHA
+(`uses: pranesh517/allure_dashboards/traceability@<40-char sha> # v2`), give
+the job only `contents: read` (run the Pages deploy as its own job), and don't
+pass it secrets — it needs none. This action makes no network calls and sends
+nothing anywhere.
+
+**Spreadsheet formulas are neutralised in `traceability.csv`.** A text cell
+that starts with `=`, `+`, `-`, `@`, a tab or a carriage return is written
+with a leading `'`, so Excel or Sheets shows it as text instead of running it
+as a formula. A test named `-1 balance` appears as `'-1 balance` in the file.
+
+**`*-id-pattern` regexes have no time limit.** A pattern with catastrophic
+backtracking (e.g. `(a+)+$`) can make the step hang. These come from your own
+workflow file; keep them simple.
+
 ## Local development
 
 No install step — zero dependencies, plain Node ES modules:

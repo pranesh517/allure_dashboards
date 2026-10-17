@@ -46,3 +46,14 @@ test('buildTraceabilityCsv: quotes fields containing commas, quotes or newlines'
   assert.match(csv, /"Has, a comma and ""quotes"""/);
   assert.match(csv, /"Multi\nline"/);
 });
+
+test('buildTraceabilityCsv: text that a spreadsheet would run as a formula is prefixed with a quote', () => {
+  const requirements = [
+    {
+      id: 'REQ-1', title: '=HYPERLINK("http://evil","x")', epic: '+cmd', feature: '@SUM(A1)', priority: '-1', status: 'passing',
+      tests: [{ testCaseId: 'TC-1', name: '\tlogs in', status: 'passed', severity: 'normal', suite: 'Auth', durationMs: 5, uuid: 'u1' }],
+    },
+  ];
+  const lines = buildTraceabilityCsv({ requirements, orphanTests: [] }).trim().split('\r\n');
+  assert.equal(lines[1], `REQ-1,"'=HYPERLINK(""http://evil"",""x"")",'+cmd,'@SUM(A1),'-1,passing,TC-1,'\tlogs in,passed,normal,Auth,5,u1`);
+});
