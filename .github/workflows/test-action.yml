@@ -151,7 +151,7 @@ jobs:
           "
           echo "Traceability self-test passed."
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           path: allure-dashboard
