@@ -340,6 +340,9 @@ a summary — see the examples.
 
 ## Known issues
 
+The full security assessment, including every finding, the affected
+versions and what was fixed, is in [SECURITY-ASSESSMENT.md](SECURITY-ASSESSMENT.md).
+
 **Using any third-party action means trusting its code.** This is how GitHub
 Actions works, not something specific to this action: `uses: owner/action@v1`
 runs whatever that tag points to today inside your job, with the job's
