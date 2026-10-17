@@ -82,3 +82,26 @@ test('action inputs never get spliced into a run script as ${{ }} text', async (
     assert.doesNotMatch(script, /\$\{\{/, `${file}: pass values through env: instead`);
   }
 });
+
+test('an output-path with a line break is rejected before any step output is written', async () => {
+  const ws = await fs.mkdtemp(path.join(os.tmpdir(), 'allure-dash-sec-'));
+  const results = path.join(ws, 'results');
+  await fs.mkdir(results);
+  const outputs = path.join(ws, 'github-output');
+  await fs.writeFile(outputs, '');
+  const clis = [
+    ['src/process.mjs'],
+    ['traceability/src/process.mjs', '--requirement-annotation', 'requirement'],
+  ];
+  for (const [cli, ...extra] of clis) {
+    assert.throws(
+      () => execFileSync('node', [path.join(repo, cli), '--results', results, '--output', `${ws}/out\ninjected=1`, ...extra], {
+        env: { ...process.env, GITHUB_OUTPUT: outputs, GITHUB_STEP_SUMMARY: '' },
+        stdio: 'pipe',
+      }),
+      /line breaks/,
+      cli,
+    );
+  }
+  assert.equal(await fs.readFile(outputs, 'utf8'), '');
+});

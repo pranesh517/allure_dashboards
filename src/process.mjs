@@ -326,6 +326,13 @@ async function main() {
   const jobSummary = (args['job-summary'] || 'true').toLowerCase() !== 'false';
   const siteTemplate = args['site-template'];
 
+  // output-path is echoed into $GITHUB_OUTPUT as `site-path=...`; a line
+  // break in it would let it add outputs of its own.
+  if (/[\r\n]/.test(outputDir)) {
+    console.error('output-path must not contain line breaks.');
+    process.exit(1);
+  }
+
   if (!resultsDir || !(await pathExists(resultsDir))) {
     console.error(`allure-results directory not found: ${resultsDir}`);
     process.exit(1);
