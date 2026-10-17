@@ -23,7 +23,7 @@ function statusColor(status) {
 
 function chip(status, extraLabel) {
   const meta = STATUS_META[status] || STATUS_META.unknown;
-  return `<span class="chip ${status}"><span class="dot"></span>${extraLabel || meta.label}</span>`;
+  return `<span class="chip ${escapeHtml(status)}"><span class="dot"></span>${escapeHtml(extraLabel || meta.label)}</span>`;
 }
 
 function formatDuration(ms) {
@@ -84,7 +84,7 @@ function renderKPIs(latest, prevRun) {
   ringTile.appendChild(donut({ percent: latest.passRate, color: 'var(--status-good)', trackColor: 'var(--gridline)' }));
   const ringText = el(`
     <div class="kpi">
-      <div class="value">${latest.passRate}%</div>
+      <div class="value">${escapeHtml(latest.passRate)}%</div>
       <div class="label">Pass rate</div>
       ${deltaHtml}
     </div>`);
@@ -98,7 +98,7 @@ function renderKPIs(latest, prevRun) {
     { value: latest.flakyCount, label: 'Flaky tests' },
   ];
   for (const t of tiles) {
-    grid.appendChild(el(`<div class="card kpi"><div class="value">${t.value}</div><div class="label">${t.label}</div></div>`));
+    grid.appendChild(el(`<div class="card kpi"><div class="value">${escapeHtml(t.value)}</div><div class="label">${escapeHtml(t.label)}</div></div>`));
   }
 }
 
@@ -129,7 +129,7 @@ function renderSuiteBars(suites) {
   for (const s of suites.slice(0, 12)) {
     const row = el(`
       <div class="bar-row">
-        <div class="name" title="${s.name}">${s.name}</div>
+        <div class="name" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</div>
         <div class="bar-track"></div>
         <div class="total">${s.total}</div>
       </div>`);
@@ -157,7 +157,7 @@ function renderSeverityBars(severities) {
   for (const s of severities) {
     const row = el(`
       <div class="bar-row">
-        <div class="name">${s.name}</div>
+        <div class="name">${escapeHtml(s.name)}</div>
         <div class="bar-track"></div>
         <div class="total">${s.total}</div>
       </div>`);
@@ -187,12 +187,12 @@ function renderCategories(categories) {
     const details = el(`
       <details style="margin-bottom:10px;">
         <summary style="cursor:pointer; font-size:13px; display:flex; justify-content:space-between;">
-          <span>${c.name}</span><span style="color:var(--text-muted)">${c.count}</span>
+          <span>${escapeHtml(c.name)}</span><span style="color:var(--text-muted)">${c.count}</span>
         </summary>
         <div style="padding:8px 4px 2px; font-size:12px; color:var(--text-secondary);"></div>
       </details>`);
     const body = details.querySelector('div');
-    body.innerHTML = c.tests.slice(0, 8).map((t) => `<div style="padding:4px 0; border-top:1px solid var(--gridline);"><strong>${t.name}</strong>${t.message ? ` — ${escapeHtml(t.message).slice(0, 140)}` : ''}</div>`).join('');
+    body.innerHTML = c.tests.slice(0, 8).map((t) => `<div style="padding:4px 0; border-top:1px solid var(--gridline);"><strong>${escapeHtml(t.name)}</strong>${t.message ? ` — ${escapeHtml(String(t.message).slice(0, 140))}` : ''}</div>`).join('');
     container.appendChild(details);
   }
 }
@@ -204,10 +204,10 @@ function renderFlaky(flakyTests) {
   for (const t of flakyTests) {
     const row = el(`
       <tr>
-        <td><strong>${t.name}</strong><div style="color:var(--text-muted); font-size:11px;">${t.suite}</div></td>
+        <td><strong>${escapeHtml(t.name)}</strong><div style="color:var(--text-muted); font-size:11px;">${escapeHtml(t.suite)}</div></td>
         <td>${chip(t.status)}</td>
         <td></td>
-        <td class="num">${t.history.length} runs seen</td>
+        <td class="num">${escapeHtml(t.history.length)} runs seen</td>
       </tr>`);
     row.children[2].appendChild(heatStrip(t.history, statusColor));
     container.appendChild(row);
@@ -285,7 +285,7 @@ function escapeHtml(str) {
 }
 
 function openLightbox(src, alt) {
-  const box = el(`<div class="lightbox"><img src="${src}" alt="${escapeHtml(alt || '')}"></div>`);
+  const box = el(`<div class="lightbox"><img src="${escapeHtml(src)}" alt="${escapeHtml(alt || '')}"></div>`);
   box.addEventListener('click', () => box.remove());
   document.body.appendChild(box);
 }
@@ -311,9 +311,9 @@ function renderAttachments(attachments) {
       return `<span class="attachment-missing">${escapeHtml(a.name)} (file not found)</span>`;
     }
     if ((a.type || '').startsWith('image/')) {
-      return `<a href="${a.path}" class="attachment-thumb" title="${escapeHtml(a.name)}" target="_blank" rel="noopener"><img src="${a.path}" alt="${escapeHtml(a.name)}" loading="lazy"></a>`;
+      return `<a href="${escapeHtml(a.path)}" class="attachment-thumb" title="${escapeHtml(a.name)}" target="_blank" rel="noopener"><img src="${escapeHtml(a.path)}" alt="${escapeHtml(a.name)}" loading="lazy"></a>`;
     }
-    return `<a href="${a.path}" class="attachment-file" target="_blank" rel="noopener">📎 ${escapeHtml(a.name)}</a>`;
+    return `<a href="${escapeHtml(a.path)}" class="attachment-file" target="_blank" rel="noopener">📎 ${escapeHtml(a.name)}</a>`;
   }).join('');
   return `<div class="attachments">${items}</div>`;
 }
@@ -736,7 +736,7 @@ function setupRunPicker(history, latest) {
     return;
   }
   picker.innerHTML = history.map((r, i) => `
-    <option value="${r.runId}">${i === 0 ? '● ' : ''}${r.label} — ${new Date(r.timestamp).toLocaleDateString()} (${r.passRate}%)</option>
+    <option value="${escapeHtml(r.runId)}">${i === 0 ? '● ' : ''}${escapeHtml(r.label)} — ${escapeHtml(new Date(r.timestamp).toLocaleDateString())} (${escapeHtml(r.passRate)}%)</option>
   `).join('');
 
   picker.addEventListener('change', async () => {

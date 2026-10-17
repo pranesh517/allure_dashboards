@@ -10,6 +10,12 @@ function svgEl(tag, attrs = {}) {
   return node;
 }
 
+// Tooltip labels are run labels — workflow input or carried-in history — so
+// they're escaped before landing in innerHTML.
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function sharedTooltip() {
   let tip = document.querySelector('.viz-tooltip');
   if (!tip) {
@@ -137,7 +143,7 @@ export function lineChart({ points, color, height = 160, valueFormat = (v) => St
     crosshair.setAttribute('x2', x(idx));
     crosshair.setAttribute('opacity', 1);
     dots.forEach((d, i) => d.setAttribute('r', i === idx ? 4.5 : 3));
-    showTooltip(clientX, clientY, `<strong>${p.label}</strong><br>${valueFormat(p.value)}${unit}`);
+    showTooltip(clientX, clientY, `<strong>${escapeHtml(p.label)}</strong><br>${escapeHtml(valueFormat(p.value))}${unit}`);
   }
 
   svg.addEventListener('mousemove', (e) => {

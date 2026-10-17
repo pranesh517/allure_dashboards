@@ -223,6 +223,29 @@ function normalizeTest(raw) {
 // `path` the dashboard can fetch/render (images) or link to (everything
 // else). Missing files (never uploaded, wrong path, etc.) are left with no
 // `path` so the UI can say so instead of rendering a broken link.
+//
+// `source` is untrusted test data, and the generated site is public: it may
+// only ever name a regular file directly inside resultsDir. Anything else —
+// `../.git/config`, an absolute path, a subdirectory, a symlink pointing out
+// of the results dir — is treated as missing, never copied.
+async function resolveAttachmentSource(resultsDir, source) {
+  if (typeof source !== 'string' || source !== path.basename(source) || source === '.' || source === '..') return null;
+  const src = path.join(resultsDir, source);
+  try {
+    const st = await fs.lstat(src);
+    return st.isFile() ? src : null;
+  } catch {
+    return null;
+  }
+}
+
+// Attachments are served from the same origin as the dashboard, so a file a
+// browser would render as a document (an HTML page-source dump, an SVG) could
+// run script with the dashboard's origin when opened. Those are published as
+// plain text instead.
+const ACTIVE_CONTENT_EXT = /\.(html?|xhtml|xht|svgz?|xml|xsl|xslt|mht|mhtml|shtml)$/i;
+const ACTIVE_CONTENT_TYPE = /^(text\/html|application\/xhtml\+xml|image\/svg\+xml|text\/xml|application\/xml|text\/xsl|message\/rfc822|multipart\/related)/i;
+
 async function resolveAttachments(tests, resultsDir, outputDir, runId) {
   const relDir = path.posix.join('data', 'attachments', sanitizeId(runId));
   const destDir = path.join(outputDir, ...relDir.split('/'));
@@ -233,13 +256,17 @@ async function resolveAttachments(tests, resultsDir, outputDir, runId) {
     const source = att.source;
     delete att.source; // internal raw-results filename — never meaningful to the client
     if (!source) return;
-    const src = path.join(resultsDir, source);
-    if (!(await pathExists(src))) return;
+    const src = await resolveAttachmentSource(resultsDir, source);
+    if (!src) return;
     if (!destDirReady) {
       await fs.mkdir(destDir, { recursive: true });
       destDirReady = true;
     }
     let destName = sanitizeId(source);
+    if (ACTIVE_CONTENT_EXT.test(destName) || ACTIVE_CONTENT_TYPE.test(att.type)) {
+      destName += '.txt';
+      att.type = 'text/plain';
+    }
     while (seenNames.has(destName)) destName = `${hashOf(destName)}_${destName}`;
     seenNames.add(destName);
     await fs.copyFile(src, path.join(destDir, destName));
